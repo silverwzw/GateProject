@@ -11,14 +11,22 @@ import gate.ProcessingResource;
 import gate.corpora.DocumentContentImpl;
 import gate.corpora.DocumentImpl;
 import gate.creole.SerialAnalyserController;
+import gate.creole.gazetteer.Lookup;
+
+import com.ontotext.gate.gazetteer.HashGazetteer;
 
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStream;
 import java.net.URL;
 
 public class GateSandBox {
@@ -34,6 +42,37 @@ public class GateSandBox {
   }
 
   public static void main(String[] args) throws Exception {
+
+	  assert args.length == 3 : "Usage: <list1> <list2> <document directory>";
+	  System.out.println("list A is:" + args[0]);
+	  System.out.println("list B is:" + args[1]);
+	  System.out.println("document directory is:" + args[2]);
+	  
+	  BufferedReader reader = null;
+	  LinkedList<String> listA,listB;
+
+	  listA = new LinkedList<String>();
+	  listB = new LinkedList<String>();
+	  
+	  try {
+		  reader = new BufferedReader(new FileReader(new File(args[0])));
+		  String word;
+		  while ((word = reader.readLine()) != null) {
+			  listA.add(word);
+		  }
+		  reader.close();
+		  reader = new BufferedReader(new FileReader(new File(args[1])));
+		  while ((word = reader.readLine()) != null) {
+			  listB.add(word);
+		  }
+		  reader.close();
+	  } finally {
+		  if (reader != null) {
+			  reader.close();
+		  }
+	  }
+	  
+	  
 	  Gate.setGateHome(new File("E:/Steven/Life/NCSU/Research/gate"));
 	  Gate.setPluginsHome(new File("E:/Steven/Life/NCSU/Research/gate/plugins"));
 	  Gate.init();
@@ -46,18 +85,29 @@ public class GateSandBox {
 	  doc.setContent(new DocumentContentImpl("Jessica is a good girl. Orange is of color orange and it's round. Ballons are of various color and most of them are round. There's a red square on the paper."));
       
 	  FeatureMap fm = Factory.newFeatureMap();
-	  fm.put("listsURL", "file:/E:/Steven/Life/NCSU/Research/gate/plugins/ANNIE/resources/gazetteer/colorandshape.def");
+	  //fm.put("listsURL", "file:/E:/Steven/Life/NCSU/Research/gate/plugins/ANNIE/resources/gazetteer/colorandshape.def");
 	  fm.put("encoding", "UTF-8");
 	  fm.put("caseSensitive", (Boolean) true);
       ProcessingResource token = (ProcessingResource) Factory.createResource("gate.creole.tokeniser.DefaultTokeniser");
       ProcessingResource sspliter = (ProcessingResource) Factory.createResource("gate.creole.splitter.SentenceSplitter");
-      ProcessingResource colorandshape = (ProcessingResource) Factory.createResource("com.ontotext.gate.gazetteer.HashGazetteer", fm);
-      
+      HashGazetteer hashGazetteer = (HashGazetteer) Factory.createResource("com.ontotext.gate.gazetteer.HashGazetteer", fm);
+      Lookup listALookup, listBLookup;
+      listALookup = new Lookup("A.lst","A","","","Lookup");
+      listBLookup = new Lookup("B.lst","B","","","Lookup");
       SerialAnalyserController app = (SerialAnalyserController) Factory.createResource("gate.creole.SerialAnalyserController");
+      
+      
+      for (String word : listA) {
+    	  hashGazetteer.add(word, listALookup);
+	  }
+      for (String word : listB) {
+    	  hashGazetteer.add(word, listBLookup);
+	  }
+      
 
       app.add(token);
       app.add(sspliter);
-      app.add(colorandshape);
+      app.add(hashGazetteer);
 
       app.setCorpus(corpus);
       corpus.add(doc);
@@ -83,9 +133,7 @@ public class GateSandBox {
 	   		continue;
 	   	}
 	   	mt = annot.getFeatures().get("majorType").toString();
-	   	if (mt.equals("color")) {
-	   		annotSorted.add(annot);
-	   	} else if (mt.equals("shape")) {
+	   	if (mt.equals("A") || mt.equals("B")) {
 	   		annotSorted.add(annot);
 	   	}
 	  }
@@ -113,10 +161,10 @@ public class GateSandBox {
 		  }
 		  String type;
 		  type = a.getFeatures().get("majorType").toString();
-		  if (type.equals("color")) {
+		  if (type.equals("A")) {
 			  color = true;
 		  }
-		  if (type.equals("shape")) {
+		  if (type.equals("B")) {
 			  shape = true;
 		  }
 	  }
