@@ -8,9 +8,9 @@ import gate.FeatureMap;
 import gate.Gate;
 import gate.Factory;
 import gate.ProcessingResource;
-import gate.corpora.DocumentContentImpl;
 import gate.corpora.DocumentImpl;
 import gate.creole.SerialAnalyserController;
+import gate.creole.gazetteer.Gazetteer;
 import gate.creole.gazetteer.Lookup;
 
 import com.ontotext.gate.gazetteer.HashGazetteer;
@@ -24,9 +24,7 @@ import java.util.TreeSet;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.InputStream;
 import java.net.URL;
 
 public class GateSandBox {
@@ -42,7 +40,8 @@ public class GateSandBox {
 	}
   }
 
-  public static void main(String[] args) throws Exception {
+  @SuppressWarnings("unused")
+public static void main(String[] args) throws Exception {
 
 	  assert args.length == 3 : "Usage: <list1> <list2> <document directory>";
 	  System.out.println("list A is:" + args[0]);
@@ -90,25 +89,28 @@ public class GateSandBox {
 	  fm.put("encoding", "UTF-8");
 	  fm.put("caseSensitive", (Boolean) true);
       ProcessingResource token = (ProcessingResource) Factory.createResource("gate.creole.tokeniser.DefaultTokeniser");
-      ProcessingResource sspliter = (ProcessingResource) Factory.createResource("gate.creole.splitter.SentenceSplitter");
-      HashGazetteer hashGazetteer = (HashGazetteer) Factory.createResource("com.ontotext.gate.gazetteer.HashGazetteer", fm);
+      //ProcessingResource sspliter = (ProcessingResource) Factory.createResource("gate.creole.splitter.SentenceSplitter");
+      //HashGazetteer hashGazetteer = (HashGazetteer) Factory.createResource("com.ontotext.gate.gazetteer.HashGazetteer", fm);
+      fm.put("listsURL", "file:///E:/Steven/Life/NCSU/Research/gate/plugins/ANNIE/resources/gazetteer/lists.def");
+      Gazetteer annieGazetteer = (Gazetteer) Factory.createResource("gate.creole.gazetteer.DefaultGazetteer",fm);
       Lookup listALookup, listBLookup;
       listALookup = new Lookup("A.lst","A","","","Lookup");
       listBLookup = new Lookup("B.lst","B","","","Lookup");
       SerialAnalyserController app = (SerialAnalyserController) Factory.createResource("gate.creole.SerialAnalyserController");
       
-      
+      /*
       for (String word : listA) {
     	  hashGazetteer.add(word, listALookup);
 	  }
       for (String word : listB) {
     	  hashGazetteer.add(word, listBLookup);
-	  }
+	  }*/
       
 
       app.add(token);
-      app.add(sspliter);
-      app.add(hashGazetteer);
+      //app.add(sspliter);
+      //app.add(hashGazetteer);
+      app.add(annieGazetteer);
 
 
       for (File file : filelist) {
@@ -151,6 +153,7 @@ public class GateSandBox {
 		  Annotation sentence = null;
 		  boolean hasA = false, hasB = false;
 		  for (Annotation a : annotSorted) {
+			  System.out.print(a.toString());/*
 			  if (a.getType().equals("Sentence")) {
 				  if (sentence != null) {
 					  System.out.println("Sentence {" + sentence.getStartNode().getOffset() + "," + sentence.getEndNode().getOffset() + "} => {listA:" + hasA + ", listB:" + hasB + "}");
@@ -175,7 +178,7 @@ public class GateSandBox {
 			  }
 			  if (type.equals("B")) {
 				  hasB = true;
-			  }
+			  }*/
 		  }
 		  if (sentence != null) {
 			  System.out.println("Sentence {" + sentence.getStartNode().getOffset() + "," + sentence.getEndNode().getOffset() + "} => {listA:" + hasA + ", listB:" + hasB + "}");
