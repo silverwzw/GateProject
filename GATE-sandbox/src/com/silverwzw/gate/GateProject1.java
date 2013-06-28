@@ -11,6 +11,8 @@ import gate.creole.gazetteer.Lookup;
 
 import com.ontotext.gate.gazetteer.HashGazetteer;
 
+import com.silverwzw.gate.datastore.GitIgnore;
+import com.silverwzw.gate.datastore.MySQLimpl;
 import com.silverwzw.gate.filter.AnnotationFilter;
 import com.silverwzw.gate.filter.FilterFactory;
 import com.silverwzw.gate.index.AnnotationIndex;
@@ -92,6 +94,7 @@ public class GateProject1 {
     	filter = FilterFactory.contains(FilterFactory.type("Sentence"), FilterFactory.fMajorType("A"), FilterFactory.fMajorType("B"));
     	
     	annotIndex.buildIndex(app, corpus, filter);
+    	annotIndex.saveIndex(new MySQLimpl("jdbc:mysql://localhost:3306/pg_development","root",GitIgnore.mySQLpasswd()), "test");
 
     	System.out.println(annotIndex);
     
@@ -99,6 +102,7 @@ public class GateProject1 {
 	public static void parse(String ... args) throws IOException {
 		BufferedReader reader = null;
 
+		
 		assert args.length == 4 && (args[3].equals("paragraph") || args[3].equals("sentance")): "Usage: <list1> <list2> <document directory> [paragraph|sentence]";
 		System.out.println("list A				= " + args[0]);
 		System.out.println("list B				= " + args[1]);

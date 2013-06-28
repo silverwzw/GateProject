@@ -3,10 +3,11 @@ package com.silverwzw.gate.filter;
 import gate.Annotation;
 
 public class FilterFactory {
+	@SuppressWarnings("serial")
 	public static class FeatureMajorTypeFilter extends AbstractFilter {
 		String type;
 		FeatureMajorTypeFilter(String type) {
-			this.type = type;
+			this.type = new String(type);
 		}
 		public boolean satisfy(Annotation a) {
 			if (a.getFeatures() == null || a.getFeatures().get("majorType") == null) {
@@ -14,14 +15,21 @@ public class FilterFactory {
 			}
 			return a.getFeatures().get("majorType").equals(type);
 		}
+		public FeatureMajorTypeFilter clone() {
+			return new FeatureMajorTypeFilter(type);
+		}
 	}
+	@SuppressWarnings("serial")
 	public static class TypeFilter extends AbstractFilter {
 		String type;
 		TypeFilter(String type) {
-			this.type = type;
+			this.type = new String(type);
 		}
 		public boolean satisfy(Annotation a) {
 			return a.getType().equals(type);
+		}
+		public TypeFilter clone() {
+			return new TypeFilter(type);
 		}
 	}
 	public static ContainsFilter contains(AnnotationFilter parent, AnnotationFilter ... children) {

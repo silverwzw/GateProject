@@ -15,10 +15,17 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.silverwzw.gate.datastore.Datastore;
 import com.silverwzw.gate.filter.AnnotationFilter;
 
 @SuppressWarnings("serial")
 public class AnnotationIndex implements Serializable {
+	public static class DatastoreException extends RuntimeException {
+		DatastoreException() {super();}
+		DatastoreException(Exception e) {super(e);}
+		DatastoreException(String s) {super(s);}
+		DatastoreException(String s, Exception e) {super(s, e);}
+	}
 	public static class IndexEntry implements Serializable {
 		private long start, end;
 		private String thumb;
@@ -93,16 +100,47 @@ public class AnnotationIndex implements Serializable {
 			add(url, filter.findAll(), content);
 		}
 	}
+	
 	public String toString() {
 		String r = "";
 		for (Entry<String, Set<IndexEntry>> ise : index.entrySet()) {
 			r += "[Doc]\t" + ise.getKey() + "\n";
 			for (IndexEntry i : ise.getValue()) {
-				r += "[Annot]\t    <" + i.getEnd() + ',' + i.getStart() + '>';
+				r += "[Annot]\t    <" + i.getStart() + ',' + i.getEnd() + '>';
 				if (i.getAbstract() != null) {
 					r += "\n[Thumb]\t\t" + i.getAbstract();
 				}
 				r += '\n';
+			}
+		}
+		return r;
+	}
+	
+	public int appendIndex(Datastore ds, String project_name) {
+		if (ds == null || ds.isClosed()) {
+			throw new DatastoreException(ds == null ? "Datastore is null." : "Datstore already closed.");
+		}
+		int r = 0;
+		for (Entry<String, Set<IndexEntry>> ise : index.entrySet()) {
+			String url = ise.getKey();
+			for (IndexEntry i : ise.getValue()) {
+				ds.execute("INSERT INTO gate_index_" + project_name + " (url, start, end) VALUES ('" + url + "'," + i.start + "," + i.end + ");");
+				r++;
+			}
+		}
+		return r;
+	}
+	public int saveIndex(Datastore ds, String project_name) {
+		if (ds == null || ds.isClosed()) {
+			throw new DatastoreException(ds == null ? "Datastore is null." : "Datstore already closed.");
+		}
+		int r = 0;
+		for (Entry<String, Set<IndexEntry>> ise : index.entrySet()) {
+			String url = ise.getKey();
+			ds.execute("DELETE FROM gate_index_" + project_name + " WHERE url = '" + url + "';");
+			for (IndexEntry i : ise.getValue()) {
+				ds.execute("INSERT INTO gate_index_" + project_name + " (url, start, end) VALUES ('" + url + "'," + i.start + "," + i.end + ");");
+				r++;
 			}
 		}
 		return r;

@@ -8,8 +8,7 @@ import java.util.TreeSet;
 import gate.Annotation;
 
 public abstract class AbstractFilter implements AnnotationFilter {
-	Set<Annotation> scenario;
-	Comparator<Annotation> defaultComparator;
+	protected transient Set<Annotation> scenario;
 
 	protected static class AnnotationComparatorByStartNode implements Comparator<Annotation> {
 		public int compare(Annotation annot, Annotation o) {
@@ -55,7 +54,7 @@ public abstract class AbstractFilter implements AnnotationFilter {
 		if (scenario == null) {
 			throw new ScenarioNotSetException();
 		}
-		result = new TreeSet<Annotation>((defaultComparator == null)? new AnnotationComparatorByStartNode(): defaultComparator); 
+		result = new TreeSet<Annotation>(new AnnotationComparatorByStartNode()); 
 		for (Annotation a : scenario) {
 			if (satisfy(a)) {
 				result.add(a);
@@ -66,10 +65,8 @@ public abstract class AbstractFilter implements AnnotationFilter {
 	public boolean equals(Object o) {
 		return o.getClass().equals(this.getClass());
 	}
-	final void setComparator(Comparator<Annotation> comp) {
-		defaultComparator = comp;
-	}
 	public void resetScenario() {
 		scenario = null;
 	}
+	public abstract AbstractFilter clone();
 }

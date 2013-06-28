@@ -6,7 +6,7 @@ import java.util.SortedSet;
 import gate.Annotation;
 
 public abstract class CachedFilter extends AbstractFilter {
-	protected SortedSet<Annotation> cache;
+	protected transient SortedSet<Annotation> cache;
 	final public synchronized SortedSet<Annotation> findAll() {
 		if(cached()) {
 			return cache;
