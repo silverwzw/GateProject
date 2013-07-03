@@ -12,7 +12,7 @@ import gate.creole.gazetteer.Lookup;
 import com.ontotext.gate.gazetteer.HashGazetteer;
 
 import com.silverwzw.gate.datastore.GitIgnore;
-import com.silverwzw.gate.datastore.MySQLimpl;
+import com.silverwzw.gate.datastore.JDBCimpl;
 import com.silverwzw.gate.filter.AnnotationFilter;
 import com.silverwzw.gate.filter.FilterFactory;
 import com.silverwzw.gate.index.AnnotationIndex;
@@ -27,7 +27,6 @@ import java.net.URL;
 
 public class GateProject1 {
 	
-	boolean debug = false;
 	static LinkedList<String> listA;
 	static LinkedList<String> listB;
 	static File filelist[];
@@ -45,6 +44,7 @@ public class GateProject1 {
 
 	public static void main(String[] args) throws Exception {
 	    
+		
 		Corpus corpus;
 		ProcessingResource token,sspliter,annieGazetteer;
 		HashGazetteer hashGazetteer;
@@ -94,7 +94,7 @@ public class GateProject1 {
     	filter = FilterFactory.contains(FilterFactory.type("Sentence"), FilterFactory.fMajorType("A"), FilterFactory.fMajorType("B"));
     	
     	annotIndex.buildIndex(app, corpus, filter);
-    	annotIndex.saveIndex(new MySQLimpl("jdbc:mysql://localhost:3306/pg_development","root",GitIgnore.mySQLpasswd()), "test");
+    	annotIndex.saveIndex(new JDBCimpl("jdbc:mysql://localhost:3306/pg_development","root",GitIgnore.mySQLpasswd()), "test");
 
     	System.out.println(annotIndex);
     

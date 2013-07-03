@@ -1,20 +1,19 @@
 package com.silverwzw.gate.index;
 
 import gate.Annotation;
-import gate.Controller;
 import gate.Corpus;
 import gate.CorpusController;
 import gate.Document;
 import gate.creole.ExecutionException;
 
 import java.io.Serializable;
-import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.silverwzw.gate.ProgramConfiguration;
 import com.silverwzw.gate.datastore.Datastore;
 import com.silverwzw.gate.filter.AnnotationFilter;
 
@@ -88,6 +87,11 @@ public class AnnotationIndex implements Serializable {
 	public void add(String url, Collection<Annotation> ac) {
 		add(url, ac, null);
 	}
+	
+	final public void buildIndex(ProgramConfiguration.Task task, Corpus corpus) throws ExecutionException {
+		buildIndex(task.getController(), corpus, task.getFilter());
+	}	
+	
 	public void buildIndex(CorpusController c, Corpus corpus, AnnotationFilter filter) throws ExecutionException {
 		c.setCorpus(corpus);
 		c.execute();

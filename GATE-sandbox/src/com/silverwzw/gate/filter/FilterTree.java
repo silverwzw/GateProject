@@ -2,20 +2,20 @@ package com.silverwzw.gate.filter;
 
 
 @SuppressWarnings("serial")
-public class TruthTableTree implements Cloneable, java.io.Serializable {
+public class FilterTree implements Cloneable, java.io.Serializable {
 	private Boolean finalResult;
-	private TruthTableTree falseSubtree;
-	private TruthTableTree trueSubtree;
-	private transient TruthTableTree cloneRef;
-	final public static TruthTableTree TRUE = new TruthTableTree(true);
-	final public static TruthTableTree FALSE = new TruthTableTree(false);
+	private FilterTree falseSubtree;
+	private FilterTree trueSubtree;
+	private transient FilterTree cloneRef;
+	final public static FilterTree TRUE = new FilterTree(true);
+	final public static FilterTree FALSE = new FilterTree(false);
 	
-	private TruthTableTree(boolean b) {
+	private FilterTree(boolean b) {
 		finalResult = b;
 		falseSubtree = trueSubtree = null;
 		cloneRef = null;
 	}
-	public TruthTableTree(TruthTableTree tTree, TruthTableTree fTree) {
+	public FilterTree(FilterTree tTree, FilterTree fTree) {
 		finalResult = null;
 		falseSubtree = fTree;
 		trueSubtree = tTree;
@@ -24,7 +24,7 @@ public class TruthTableTree implements Cloneable, java.io.Serializable {
 	Boolean getResult() {
 		return finalResult;
 	}
-	TruthTableTree subtree(boolean b) {
+	FilterTree subtree(boolean b) {
 		if (finalResult == null) {
 			return b ? trueSubtree : falseSubtree;
 		}
@@ -34,8 +34,8 @@ public class TruthTableTree implements Cloneable, java.io.Serializable {
 			return FALSE;
 		}
 	}
-	public TruthTableTree clone() {
-		TruthTableTree t;
+	public FilterTree clone() {
+		FilterTree t;
 		clone_clean();
 		t = clone_main();
 		clone_clean();
@@ -49,22 +49,22 @@ public class TruthTableTree implements Cloneable, java.io.Serializable {
 			falseSubtree.clone_clean();
 		}
 	}
-	private TruthTableTree clone_main() {
+	private FilterTree clone_main() {
 		if (finalResult != null) {
 			return this;
 		}
 		if (cloneRef != null) {
 			return cloneRef;
 		}
-		cloneRef = new TruthTableTree(trueSubtree.clone(), falseSubtree.clone());
+		cloneRef = new FilterTree(trueSubtree.clone(), falseSubtree.clone());
 		return cloneRef;
 	}
 	public boolean equals(Object o) {
 		if (o.getClass() != this.getClass()) {
 			return false;
 		}
-		TruthTableTree lhs;
-		lhs = (TruthTableTree) o;
+		FilterTree lhs;
+		lhs = (FilterTree) o;
 		if (finalResult != null && lhs.finalResult != null) {
 			return finalResult.equals(lhs);
 		} else if (finalResult == null && lhs.finalResult == null) {

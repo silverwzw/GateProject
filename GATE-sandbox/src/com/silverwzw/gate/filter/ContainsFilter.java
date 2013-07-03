@@ -3,8 +3,11 @@ package com.silverwzw.gate.filter;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+
+import com.silverwzw.JSON.JSON;
 
 import gate.Annotation;
 
@@ -12,24 +15,24 @@ import gate.Annotation;
 final public class ContainsFilter extends CachedFilter {
 	AnnotationFilter parent;
 	List<AnnotationFilter> children;
-	TruthTableTree ttt;
-	public ContainsFilter(AnnotationFilter parent, TruthTableTree ttt, List<AnnotationFilter> children) {
+	FilterTree ttt;
+	ContainsFilter(AnnotationFilter parent, FilterTree ttt, List<AnnotationFilter> children) {
 		Constructor(parent, ttt, children);
 	}
-	public ContainsFilter(AnnotationFilter parent, AnnotationFilter ... children) {
-		TruthTableTree ttt;
+	ContainsFilter(AnnotationFilter parent, AnnotationFilter ... children) {
+		FilterTree ttt;
 		List<AnnotationFilter> laf;
 		
-		ttt = TruthTableTree.TRUE;
+		ttt = FilterTree.TRUE;
 		laf = new LinkedList<AnnotationFilter>();
 		
 		for (AnnotationFilter child : children) {
-			ttt = new TruthTableTree(ttt, TruthTableTree.FALSE);
+			ttt = new FilterTree(ttt, FilterTree.FALSE);
 			laf.add(child);
 		}
 		Constructor(parent, ttt, laf);
 	}
-	private void Constructor(AnnotationFilter p, TruthTableTree t, List<AnnotationFilter> l) {
+	private void Constructor(AnnotationFilter p, FilterTree t, List<AnnotationFilter> l) {
 		parent = p;
 		children =  new LinkedList<AnnotationFilter>();
 		ttt = t.clone();  
@@ -50,7 +53,7 @@ final public class ContainsFilter extends CachedFilter {
 		return false;
 	}
 	public synchronized void buildCache() {
-		cache = new TreeSet<Annotation>(new AbstractFilter.AnnotationComparatorByStartNode());
+		cache = new TreeSet<Annotation>(new AnnotationFilter.AnnotationComparatorByStartNode());
 		
 		List<List<Annotation>> childFilterAnnotListList = new ArrayList<List<Annotation>>(children.size());
 		List<Integer> currentCur = new ArrayList<Integer>(children.size());
@@ -71,7 +74,7 @@ final public class ContainsFilter extends CachedFilter {
 		
 		for (Annotation p : parent.findAll()) {
 			Long start, end;
-			TruthTableTree tree = ttt;
+			FilterTree tree = ttt;
 			
 			start = p.getStartNode().getOffset();
 			end = p.getEndNode().getOffset();
@@ -121,5 +124,21 @@ final public class ContainsFilter extends CachedFilter {
 			childrenClone.add(af.clone());
 		}
 		return new ContainsFilter(parent.clone(), ttt.clone(), childrenClone);
+	}
+	static ContainsFilter build(JSON json, FilterFactory.FilterBuilder fb) {
+		assert "Contains".equals((String)json.get("type").toObject());
+		AnnotationFilter p;
+		List<AnnotationFilter> c;
+		FilterTree ft;
+		
+		p = fb.getFilter((String)json.get("parent").toObject());
+		ft = fb.getTree((String)json.get("tree").toObject());
+		c = new LinkedList<AnnotationFilter>();
+		
+		for (Entry<String, JSON> e : json.get("children")) {
+			c.add(fb.getFilter((String) e.getValue().toObject()));
+		}
+		
+		return FilterFactory.contains(p,ft,c);
 	}
 }
