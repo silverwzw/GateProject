@@ -94,7 +94,7 @@ public class GateProject1 {
     	filter = FilterFactory.contains(FilterFactory.type("Sentence"), FilterFactory.fMajorType("A"), FilterFactory.fMajorType("B"));
     	
     	annotIndex.buildIndex(app, corpus, filter);
-    	annotIndex.saveIndex(new JDBCimpl("jdbc:mysql://localhost:3306/pg_development","root",GitIgnore.mySQLpasswd()), "test");
+    	annotIndex.saveIndex(new JDBCimpl("jdbc:mysql://localhost:3306/gate","root",GitIgnore.mySQLpasswd()), "test");
 
     	System.out.println(annotIndex);
     

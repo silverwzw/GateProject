@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.silverwzw.Debug;
 import com.silverwzw.gate.ProgramConfiguration;
 import com.silverwzw.gate.datastore.Datastore;
 import com.silverwzw.gate.filter.AnnotationFilter;
@@ -119,34 +120,25 @@ public class AnnotationIndex implements Serializable {
 		}
 		return r;
 	}
-	
-	public int appendIndex(Datastore ds, String project_name) {
-		if (ds == null || ds.isClosed()) {
-			throw new DatastoreException(ds == null ? "Datastore is null." : "Datstore already closed.");
-		}
-		int r = 0;
-		for (Entry<String, Set<IndexEntry>> ise : index.entrySet()) {
-			String url = ise.getKey();
-			for (IndexEntry i : ise.getValue()) {
-				ds.execute("INSERT INTO gate_index_" + project_name + " (url, start, end) VALUES ('" + url + "'," + i.start + "," + i.end + ");");
-				r++;
-			}
-		}
-		return r;
-	}
+
 	public int saveIndex(Datastore ds, String project_name) {
+		Debug.into(this, "saveIndex");
+		
 		if (ds == null || ds.isClosed()) {
 			throw new DatastoreException(ds == null ? "Datastore is null." : "Datstore already closed.");
 		}
+		
+		if (!ds.indexTableExists(project_name)) {
+			ds.newIndexTable(project_name);
+		}
+		
 		int r = 0;
 		for (Entry<String, Set<IndexEntry>> ise : index.entrySet()) {
 			String url = ise.getKey();
-			ds.execute("DELETE FROM gate_index_" + project_name + " WHERE url = '" + url + "';");
-			for (IndexEntry i : ise.getValue()) {
-				ds.execute("INSERT INTO gate_index_" + project_name + " (url, start, end) VALUES ('" + url + "'," + i.start + "," + i.end + ");");
-				r++;
-			}
+			Iterable<IndexEntry> ii = ise.getValue();
+			ds.updateIndex(project_name, url, ii);
 		}
+		Debug.out(this, "saveIndex");
 		return r;
 	}
 }
