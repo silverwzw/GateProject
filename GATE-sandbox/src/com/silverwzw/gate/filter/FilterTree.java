@@ -2,7 +2,7 @@ package com.silverwzw.gate.filter;
 
 
 @SuppressWarnings("serial")
-public class FilterTree implements Cloneable, java.io.Serializable {
+final public class FilterTree implements Cloneable, java.io.Serializable {
 	private Boolean finalResult;
 	private FilterTree falseSubtree;
 	private FilterTree trueSubtree;
@@ -21,10 +21,10 @@ public class FilterTree implements Cloneable, java.io.Serializable {
 		trueSubtree = tTree;
 		cloneRef = null;
 	}
-	Boolean getResult() {
+	final Boolean getResult() {
 		return finalResult;
 	}
-	FilterTree subtree(boolean b) {
+	final FilterTree subtree(boolean b) {
 		if (finalResult == null) {
 			return b ? trueSubtree : falseSubtree;
 		}
@@ -34,7 +34,7 @@ public class FilterTree implements Cloneable, java.io.Serializable {
 			return FALSE;
 		}
 	}
-	public FilterTree clone() {
+	final public FilterTree clone() {
 		FilterTree t;
 		clone_clean();
 		t = clone_main();
@@ -42,14 +42,14 @@ public class FilterTree implements Cloneable, java.io.Serializable {
 		t.clone_clean();
 		return t;
 	}
-	private void clone_clean() {
+	final private void clone_clean() {
 		cloneRef = null;
 		if (finalResult == null) {
 			trueSubtree.clone_clean();
 			falseSubtree.clone_clean();
 		}
 	}
-	private FilterTree clone_main() {
+	final private FilterTree clone_main() {
 		if (finalResult != null) {
 			return this;
 		}
@@ -59,7 +59,7 @@ public class FilterTree implements Cloneable, java.io.Serializable {
 		cloneRef = new FilterTree(trueSubtree.clone(), falseSubtree.clone());
 		return cloneRef;
 	}
-	public boolean equals(Object o) {
+	final public boolean equals(Object o) {
 		if (o.getClass() != this.getClass()) {
 			return false;
 		}
@@ -72,5 +72,30 @@ public class FilterTree implements Cloneable, java.io.Serializable {
 		} else {
 			return true;
 		}
+	}
+	final public String toString() {
+		String tts,fts;
+		FilterTree tt,ft;
+
+		tt = subtree(true);
+		ft = subtree(false);
+		
+		if (((Boolean)true).equals(tt.getResult())) {
+			tts = "TRUE";
+		} else if (((Boolean)false).equals(tt.getResult())) {
+			tts = "FALSE";
+		} else {
+			tts = tt.toString();
+		}
+		
+		if (((Boolean)true).equals(ft.getResult())) {
+			fts = "TRUE";
+		} else if (((Boolean)false).equals(ft.getResult())) {
+			fts = "FALSE";
+		} else {
+			fts = ft.toString();
+		}
+		
+		return "{true -> " + tts +", false -> " + fts + "}";
 	}
 }

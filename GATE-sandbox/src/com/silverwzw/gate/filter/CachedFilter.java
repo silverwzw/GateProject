@@ -26,4 +26,7 @@ public abstract class CachedFilter extends AnnotationFilter {
 		cache = null;
 		super.setScenario(s);
 	}
+	final public synchronized void releaseCache() {
+		cache = null;
+	}
 }

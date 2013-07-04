@@ -71,14 +71,14 @@ final public class ProgramConfiguration {
 	protected static String helpString =
 			"Usage: -t <file ..> -u <url ..> [Other Options]\n\n" + 
 			"Arguments:\n" +
-			"	-t <file ..>		Required. Task Configuration File(s)\n" +
-			"	-u <url ..>			Required. Specify document(s) or document directory(ies) to process\n" +
-			"	-g <path>			Optional. Path to GATE home\n" +
-			"	-p <path>			Optional. Path to GATE plugin home\n" +
-			"	-c <url ..>			Optional. Path(s) of Creole plugin directory\n" +
-			"	-d <JDBC conf file>	Optional. Set JDBC config file\n" +
-			"	-v [level]			Optional. Enable debug mode\n" +
-			"	-h or --help		Optional. Show help message\n";
+			"   -t <file ..>        Required. Task Configuration File(s)\n" +
+			"   -u <url ..>         Required. Specify document(s) or document directory(ies) to process\n" +
+			"   -g <path>           Optional. Path to GATE home\n" +
+			"   -p <path>           Optional. Path to GATE plugin home\n" +
+			"   -c <url ..>         Optional. Path(s) of Creole plugin directory\n" +
+			"   -d <JDBC conf file> Optional. Set JDBC config file\n" +
+			"   -v [level]          Optional. Enable debug mode\n" +
+			"   -h or --help        Optional. Show help message\n";
 
 	@SuppressWarnings("serial")
 	private class ArgParserException extends Exception {};
@@ -110,7 +110,7 @@ final public class ProgramConfiguration {
 				
 				if (args[i].equals("--help")) {
 					System.out.print(helpString);
-					i++;
+					System.exit(0);
 				}
 				
 				if (args[i].charAt(0) != '-' || args[i].length() != 2) {
@@ -161,6 +161,7 @@ final public class ProgramConfiguration {
 					case 'd':
 						jdbcConf = args[++i];
 						Debug.println(3, "Reading JDBC conf parameter '" + args[i] + "'");
+						i++;
 						break;
 						
 					case 'v':
@@ -402,7 +403,7 @@ final public class ProgramConfiguration {
 		
 		name = (String) json.get("name").toObject();
 		
-		Debug.println(2, "Building task " + json.get(name));
+		Debug.println(2, "Building task " + (String)json.get("name").toObject());
 		
 		return new Task(name, buildController(json), FilterFactory.build(json));
 	}

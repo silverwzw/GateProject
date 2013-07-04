@@ -55,16 +55,16 @@ public class Debug {
 		if (c.equals(String.class)) {
 			name = (String) o;
 		} else if (c.equals(Class.class)){
-			name = c.getName();
+			name = ((Class<?>) o).getName();
 		} else {
-			name = o.getClass().getName();
+			name = c.getName();
 		}
 		
 		if (!ge(3)) {
 			name = name.substring(name.lastIndexOf('.') + 1);
 		}
 		
-		return rawPrint(2, "[DEBUG]" + action + ": " + name + "." + methodName, System.out);
+		return rawPrint(2, "[DEBUG]" + action + ": " + name + "." + methodName + '\n', System.out);
 	}
 	
 	public static boolean info(String msg) {

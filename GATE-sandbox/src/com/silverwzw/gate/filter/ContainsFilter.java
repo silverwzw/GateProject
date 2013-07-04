@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 
 import gate.Annotation;
@@ -125,20 +126,43 @@ final public class ContainsFilter extends CachedFilter {
 		}
 		return new ContainsFilter(parent.clone(), ttt.clone(), childrenClone);
 	}
-	static ContainsFilter build(JSON json, FilterFactory.FilterBuilder fb) {
+	public static ContainsFilter build(JSON json, FilterFactory.FilterBuilder fb) {
+		Debug.into(ContainsFilter.class,"build");
 		assert "Contains".equals((String)json.get("type").toObject());
+		
 		AnnotationFilter p;
 		List<AnnotationFilter> c;
 		FilterTree ft;
+		String treeName;
 		
 		p = fb.getFilter((String)json.get("parent").toObject());
-		ft = fb.getTree((String)json.get("tree").toObject());
+		treeName = (String)json.get("tree").toObject();
+		
+		Debug.println(2, "Building Filter Tree " + treeName);
+		ft = fb.getTree(treeName);
+		
 		c = new LinkedList<AnnotationFilter>();
 		
 		for (Entry<String, JSON> e : json.get("children")) {
 			c.add(fb.getFilter((String) e.getValue().toObject()));
 		}
+
+		ContainsFilter f = new ContainsFilter(p,ft,c);
 		
-		return FilterFactory.contains(p,ft,c);
+		Debug.out(ContainsFilter.class,"build");
+		return f;
+	}
+	public String toString() {
+		String clist;
+		clist = "";
+		
+		for (int i = 0; i < children.size(); i++) {
+			clist += children.get(i).toString();
+			if (i < children.size() -1) {
+				clist += ", ";
+			}
+		}
+		
+		return "{<Contains>: parent=" + parent.toString() + ", children=[" + clist + "], tree=" + ttt.toString() + "}";
 	}
 }
