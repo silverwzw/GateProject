@@ -1,7 +1,7 @@
 package com.silverwzw.gate;
 
 import com.silverwzw.gate.ProgramConfiguration.Task;
-import com.silverwzw.gate.index.AnnotationIndex;
+import com.silverwzw.gate.manager.AnnotationIndex;
 
 
 public class GateProject1 {

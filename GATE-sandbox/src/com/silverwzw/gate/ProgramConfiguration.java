@@ -31,32 +31,14 @@ import com.ontotext.gate.gazetteer.HashGazetteer;
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.JSON.JSON.JsonStringFormatException;
-import com.silverwzw.gate.datastore.Datastore;
+import com.silverwzw.gate.datastore.IndexDatastore;
 import com.silverwzw.gate.datastore.JDBCimpl;
-import com.silverwzw.gate.filter.AnnotationFilter;
-import com.silverwzw.gate.filter.FilterFactory;
+import com.silverwzw.gate.task.filter.FilterFactory;
+import com.silvrewzw.gate.task.Task;
 
 final public class ProgramConfiguration {
 	
-	public static class Task {
-		private String n;
-		private CorpusController g;
-		private AnnotationFilter f;
-		Task(String name, CorpusController gapp, AnnotationFilter filter) {
-			n = name;
-			g = gapp;
-			f = filter;
-		}
-		public String getName() {
-			return n;
-		}
-		public CorpusController getController() {
-			return g;
-		}
-		public AnnotationFilter getFilter() {
-			return f;
-		}
-	}
+
 	
 	protected List<String> conf = new LinkedList<String>();
 	protected List<String> docConf = new LinkedList<String>();
@@ -64,7 +46,7 @@ final public class ProgramConfiguration {
 	protected String gatePluginHome = "E:/Steven/Life/NCSU/Research/gate/plugins";
 	protected List<String> gateCreoleDir = new LinkedList<String>();
 	protected String jdbcConf = null;
-	protected Datastore ds = null;
+	protected IndexDatastore ds = null;
 	protected gate.Corpus corpus = null;
 	protected List<Task> tasks = null;
 
@@ -228,7 +210,7 @@ final public class ProgramConfiguration {
 		Debug.out(this, "InitGate");
 	}
 	
-	public Datastore getDatastore() {
+	public IndexDatastore getDatastore() {
 		Debug.into(this, "getDatastore");
 		if (ds == null) {
 			Debug.println(3, "lazy load - build new datastore instance.");

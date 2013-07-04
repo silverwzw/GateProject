@@ -1,4 +1,4 @@
-package com.silverwzw.gate.index;
+package com.silverwzw.gate.manager;
 
 import gate.Annotation;
 import gate.Corpus;
@@ -15,8 +15,8 @@ import java.util.Set;
 
 import com.silverwzw.Debug;
 import com.silverwzw.gate.ProgramConfiguration;
-import com.silverwzw.gate.datastore.Datastore;
-import com.silverwzw.gate.filter.AnnotationFilter;
+import com.silverwzw.gate.datastore.IndexDatastore;
+import com.silverwzw.gate.task.filter.AnnotationFilter;
 
 @SuppressWarnings("serial")
 public class AnnotationIndex implements Serializable {
@@ -121,7 +121,7 @@ public class AnnotationIndex implements Serializable {
 		return r;
 	}
 
-	public int saveIndex(Datastore ds, String project_name) {
+	public int saveIndex(IndexDatastore ds, String project_name) {
 		Debug.into(this, "saveIndex");
 		
 		if (ds == null || ds.isClosed()) {

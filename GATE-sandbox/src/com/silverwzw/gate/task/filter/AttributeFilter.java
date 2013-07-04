@@ -1,8 +1,8 @@
-package com.silverwzw.gate.filter;
+package com.silverwzw.gate.task.filter;
 
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
-import com.silverwzw.gate.filter.FilterFactory.FilterBuilder;
+import com.silverwzw.gate.task.filter.FilterFactory.FilterBuilder;
 
 import gate.Annotation;
 

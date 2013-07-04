@@ -9,12 +9,14 @@ import java.sql.Statement;
 import java.util.regex.Pattern;
 
 import com.silverwzw.Debug;
-import com.silverwzw.gate.index.AnnotationIndex.IndexEntry;
+import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
 
 
-final public class JDBCimpl implements Datastore {
+final public class JDBCimpl implements IndexDatastore, CacheDatastore {
+	
 	private Connection conn;
 	static Pattern identifierTest = Pattern.compile("^[a-zA-Z_][a-zA-Z_0-9]*$");
+	
 	@SuppressWarnings("serial")
 	public static class ConnectionException extends RuntimeException {
 		ConnectionException() {super();};
@@ -36,6 +38,7 @@ final public class JDBCimpl implements Datastore {
 		UnsafeRequestException(String s) {super(s);};
 		UnsafeRequestException(String s, Exception e) {super(s,e);};
 	}
+	
 	public JDBCimpl (String connStr, String user, String passwd) {
 		Debug.into(this, "<Constructor>");
 		try {
@@ -78,6 +81,7 @@ final public class JDBCimpl implements Datastore {
 		Debug.out(this, "execute");
 		return rs;
 	}
+	
 	protected void finalize() throws Throwable {
 		try {
 			if (conn != null && !conn.isClosed()) {
@@ -89,6 +93,7 @@ final public class JDBCimpl implements Datastore {
 			super.finalize();
 		}
 	}
+	
 	final public boolean isClosed() {
 		try {
 			return conn == null || conn.isClosed();
@@ -96,6 +101,7 @@ final public class JDBCimpl implements Datastore {
 			throw new ImplSQLException(e);
 		}
 	}
+	
 	final public void close(){
 		Debug.into(this, "close");
 		try {
@@ -110,6 +116,7 @@ final public class JDBCimpl implements Datastore {
 		conn = null;
 		Debug.into(this, "close");
 	}
+	
 	public ResultSet executeQuery(String sql) {
 		Debug.into(this, "executeQuery");
 		
@@ -124,6 +131,7 @@ final public class JDBCimpl implements Datastore {
 		Debug.out(this, "executeQuery");
 		return rs;
 	}
+	
 	public void executeUpdate(String sql) {
 		Debug.into(this, "executeUpdate");
 		try {
@@ -134,6 +142,7 @@ final public class JDBCimpl implements Datastore {
 		}
 		Debug.out(this, "executeUpdate");
 	}
+	
 	public boolean indexTableExists(String taskName) {
 		Debug.into(this, "indexTableExists");
 		
@@ -161,6 +170,7 @@ final public class JDBCimpl implements Datastore {
 		Debug.out(this, "indexTableExists");
 		return r;
 	}
+	
 	public void newIndexTable(String taskName) {
 		Debug.into(this, "newIndexTable");
 		
@@ -177,6 +187,7 @@ final public class JDBCimpl implements Datastore {
 		executeUpdate("CREATE TABLE index_" + taskName + " (url varchar(1024), start int, end int);");
 		Debug.out(this, "newIndexTable");
 	}
+	
 	public void updateIndex(String taskName, String url, Iterable<IndexEntry> ii) {
 		Debug.into(this, "updateIndex");
 		
@@ -210,5 +221,9 @@ final public class JDBCimpl implements Datastore {
 		}
 		
 		Debug.out(this, "updateIndex");
+	}
+	
+	public void updateDocument(String url, String content) {
+		;
 	}
 }
