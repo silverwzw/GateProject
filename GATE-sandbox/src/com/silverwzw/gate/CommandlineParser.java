@@ -32,13 +32,11 @@ import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.JSON.JSON.JsonStringFormatException;
 import com.silverwzw.gate.datastore.IndexDatastore;
-import com.silverwzw.gate.datastore.JDBCimpl;
+import com.silverwzw.gate.datastore.JDBC_MySQL_impl;
 import com.silverwzw.gate.task.filter.FilterFactory;
 import com.silvrewzw.gate.task.Task;
 
-final public class ProgramConfiguration {
-	
-
+final public class CommandlineParser {
 	
 	protected List<String> conf = new LinkedList<String>();
 	protected List<String> docConf = new LinkedList<String>();
@@ -65,7 +63,7 @@ final public class ProgramConfiguration {
 	@SuppressWarnings("serial")
 	private class ArgParserException extends Exception {};
 	
-	public ProgramConfiguration(String ... args) {
+	public CommandlineParser(String ... args) {
 		
 		Debug.into(this, "<Constructor>");
 		
@@ -216,7 +214,7 @@ final public class ProgramConfiguration {
 			Debug.println(3, "lazy load - build new datastore instance.");
 			if (jdbcConf == null) {
 				Debug.println(3, "Using default datastore");
-				return new JDBCimpl("jdbc:mysql://localhost:3306/gate", "root", com.silverwzw.gate.datastore.GitIgnore.mySQLpasswd());
+				return new JDBC_MySQL_impl("jdbc:mysql://localhost:3306/gate", "root", com.silverwzw.gate.datastore.GitIgnore.mySQLpasswd());
 			}
 			
 			File f;
@@ -236,7 +234,7 @@ final public class ProgramConfiguration {
 			
 			Debug.println(3, "The JDBC JSON object read in is:\n " + json.format());
 			
-			ds = new JDBCimpl((String)json.get("jdbc").toObject(), (String)json.get("user").toObject(), (String)json.get("passwd").toObject());
+			ds = new JDBC_MySQL_impl((String)json.get("jdbc").toObject(), (String)json.get("user").toObject(), (String)json.get("passwd").toObject());
 		} else {
 			Debug.println(3, "lazy load - re-use datastore instance.");
 		}
@@ -380,119 +378,7 @@ final public class ProgramConfiguration {
 		return tasks;
 	}
 	
-	private Task buildTask(JSON json) {
-		String name;
-		
-		name = (String) json.get("name").toObject();
-		
-		Debug.println(2, "Building task " + (String)json.get("name").toObject());
-		
-		return new Task(name, buildController(json), FilterFactory.build(json));
-	}
 	
-	private CorpusController buildController (JSON json) {
-		Debug.println(2, "Building controller of task " + (String)json.get("name").toObject());
-		
-		SerialAnalyserController cc;
-		
-		if (json.get("template") != null) {
-			String path;
-			path = (String) json.get("template").toObject();
-			Debug.println(3, "Loading template from file " + path);
-			try {
-				cc = (SerialAnalyserController) PersistenceManager.loadObjectFromFile(new File(path));
-			} catch (GateException e) {
-				throw new RuntimeException(e);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		} else {
-			Debug.println(3, "no template - creating empty controller");
-			try {
-				cc = (SerialAnalyserController) Factory.createResource("gate.creole.SerialAnalyserController");
-			} catch (GateException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		
-		JSON decorators = json.get("decorator");
-		if (decorators != null) {
-		
-			for (Entry<String, JSON> e : decorators) {
-				
-				JSON decorator = e.getValue();
-				String prPath = (String) decorator.get("path").toObject();
-				ProcessingResource pr;
-				
-				Debug.println(3, "Building PR  " + prPath);
-				if (decorator.get("featureMap") != null) {
-					FeatureMap fm = new SimpleFeatureMapImpl();
-					Debug.println(3, "Building FeatureMap of " + prPath);
-					for (Entry<String,JSON> e2: decorator.get("featureMap")) {
-						fm.put(e2.getKey(), e2.getValue().toObject());
-					}
-					try {
-						pr = (ProcessingResource) Factory.createResource(prPath, fm);
-					} catch (GateException ex) {
-						throw new RuntimeException(ex);
-					}
-				} else {
-					try {
-						pr = (ProcessingResource) Factory.createResource(prPath);
-					} catch (ResourceInstantiationException ex) {
-						throw new RuntimeException(ex);
-					}
-				}
-				
-				if (pr instanceof com.ontotext.gate.gazetteer.HashGazetteer) {
-					Debug.println(3, "Building Lookups.");
-					assert decorator.get("list") != null : "HashGazetteer should have at least one word list";
-					
-					HashGazetteer hg = (HashGazetteer) pr;
-					
-					for (Entry<String,JSON> en : decorator.get("list")) {
-						Debug.println(3, "Building Lookup " + en.getKey());
-						
-						FileReader fr = null;
-						BufferedReader reader = null;
-						Lookup lkup = null;
-						
-						lkup = new Lookup((String) en.getValue().toObject(), en.getKey(), "", "", "Lookup");
-						
-						try {
-							fr = new FileReader(new File((String)en.getValue().toObject()));
-							reader = new BufferedReader(fr);
-							
-							String word;
-							while ((word = reader.readLine()) != null) {
-								hg.add(word, lkup);
-							}
-						} catch (FileNotFoundException ex) {
-							throw new RuntimeException(ex);
-						} catch (IOException ex) {
-							throw new RuntimeException(ex);
-						} finally {
-							try {
-								if (reader != null) {
-									reader.close();	
-								}
-								if (fr != null) {
-									fr.close();
-								}
-							} catch (IOException ex) {
-								throw new RuntimeException(ex);
-							}
-						}
-					}
-					
-				}
-
-				Debug.println(3, "Adding PR " + prPath + " to Controller in task " + (String)json.get("name").toObject());
-				cc.add(pr);
-			}
-		}
-		
-		Debug.println(2, "Finish building Controller in task " + (String)json.get("name").toObject());
-		return cc;
-	}
+	
+	
 }

@@ -14,9 +14,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.silverwzw.Debug;
-import com.silverwzw.gate.ProgramConfiguration;
+import com.silverwzw.gate.CommandlineParser;
 import com.silverwzw.gate.datastore.IndexDatastore;
 import com.silverwzw.gate.task.filter.AnnotationFilter;
+import com.silvrewzw.gate.task.Task;
 
 @SuppressWarnings("serial")
 public class AnnotationIndex implements Serializable {
@@ -89,7 +90,7 @@ public class AnnotationIndex implements Serializable {
 		add(url, ac, null);
 	}
 	
-	final public void buildIndex(ProgramConfiguration.Task task, Corpus corpus) throws ExecutionException {
+	final public void buildIndex(Task task, Corpus corpus) throws ExecutionException {
 		buildIndex(task.getController(), corpus, task.getFilter());
 	}	
 	

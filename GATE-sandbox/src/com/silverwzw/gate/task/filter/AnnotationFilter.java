@@ -11,7 +11,6 @@ import gate.Annotation;
 
 @SuppressWarnings("serial")
 public abstract class AnnotationFilter implements Cloneable, Serializable {
-	protected String name = null;
 	protected transient Set<Annotation> scenario;
 
 	protected static class AnnotationComparatorByStartNode implements Comparator<Annotation> {
@@ -40,12 +39,6 @@ public abstract class AnnotationFilter implements Cloneable, Serializable {
 		ScenarioNotSetException(Exception e) {super(e);}
 		ScenarioNotSetException(String s) {super(s);}
 		ScenarioNotSetException(String s, Exception e) {super(s,e);}
-	}
-	final public void setName(String name) {
-		this.name = name;
-	}
-	final public String getName() {
-		return name;
 	}
 	public abstract boolean satisfy(Annotation a);
 	public void setScenario(Set<Annotation> s) {

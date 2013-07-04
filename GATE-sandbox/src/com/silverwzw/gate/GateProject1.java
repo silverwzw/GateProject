@@ -1,6 +1,6 @@
 package com.silverwzw.gate;
 
-import com.silverwzw.gate.ProgramConfiguration.Task;
+import com.silvrewzw.gate.task.Task;
 import com.silverwzw.gate.manager.AnnotationIndex;
 
 
@@ -8,10 +8,10 @@ public class GateProject1 {
 
 	public static void main(String[] args) throws Exception {
 	    
-		ProgramConfiguration config;
+		CommandlineParser config;
 		AnnotationIndex ai;
 		
-		config = new ProgramConfiguration(args);
+		config = new CommandlineParser(args);
 		config.InitGate();
 		
 		for (Task t : config.getTaskList()) {

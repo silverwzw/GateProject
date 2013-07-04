@@ -2,40 +2,26 @@ package com.silverwzw.gate.task.filter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
-
-import gate.Annotation;
+import com.silverwzw.JSON.JSON.JsonStringFormatException;
 
 public class FilterFactory {
 	
 	static Map<String, Class<?>> subClassRegistor = new HashMap<String, Class<?>>();
 	
 	static {
-		subClassRegistor.put("FeatureMajorType", FeatureMajorTypeFilter.class);
-		subClassRegistor.put("Type", TypeFilter.class);
-		subClassRegistor.put("Contains", ContainsFilter.class);
-	}
-	final public static ContainsFilter contains(AnnotationFilter parent, AnnotationFilter ... children) {
-		return new ContainsFilter(parent,children);
-	}
-	final public static ContainsFilter contains(AnnotationFilter parent, FilterTree tree, List<AnnotationFilter> children) {
-		return new ContainsFilter(parent, tree, children);
-	}
-	final public static FeatureMajorTypeFilter fMajorType(String m) {
-		return new FeatureMajorTypeFilter(m);
-	}
-	final public static TypeFilter type(String m) {
-		return new TypeFilter(m);
+		register("FeatureMajorType", FeatureMajorTypeFilter.class);
+		register("Type", TypeFilter.class);
+		register("Contains", ContainsFilter.class);
 	}
 	static class FilterBuilder {
 		JSON treeList, filterList;
 		FilterBuilder(JSON json) {
-			treeList = json.get("tree");
-			filterList = json.get("filter");
+			treeList = json.get("TREE");
+			filterList = json;
 		}
 		FilterTree getTree(String name) {
 			if (name.equals("FALSE")) {
@@ -83,18 +69,15 @@ public class FilterFactory {
 				throw e;
 			}
 			
-			ret.setName(name);
 			return ret;
 		}
 	}
-	final public static AnnotationFilter build(JSON json) {
-		String tname;
-		tname = (String) json.get("name").toObject();
-		Debug.println(3, "building root filter of task '" + tname + '\'');
-		AnnotationFilter f;
-		f = (new FilterBuilder(json)).getFilter("ROOT");
-		Debug.println(3, "root filter of task '" + tname + "' is:\n" + f.toString());
-		return f;
+	final public static AnnotationFilter build(String filterJson) {
+		try {
+			return (new FilterBuilder(JSON.parse(filterJson))).getFilter("ROOT");
+		} catch (JsonStringFormatException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	final public static void register(String name, Class<?> c) {
 		subClassRegistor.put(name, c);
