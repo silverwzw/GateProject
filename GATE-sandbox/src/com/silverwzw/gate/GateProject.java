@@ -1,0 +1,272 @@
+package com.silverwzw.gate;
+
+import java.io.File;
+import java.net.URL;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+
+
+import com.silverwzw.Debug;
+import com.silverwzw.JSON.JSON;
+import com.silverwzw.cmdapp.Executable;
+import com.silverwzw.cmdapp.SimpleCommandlineApplication;
+import com.silverwzw.cmdapp.SimpleCommandlineApplication.ActionHandler;
+import com.silverwzw.cmdapp.SimpleCommandlineApplication.CommandlineArgumentParseException;
+import com.silverwzw.gate.datastore.DatastoreRouter;
+import com.silverwzw.gate.datastore.DatastoreRouterImpl;
+import com.silverwzw.gate.manager.GateProjectManager;
+import com.silvrewzw.gate.task.Task;
+
+public class GateProject extends SimpleCommandlineApplication {
+
+	public static void main(String[] args) throws Exception {
+		(new GateProject()).execute(args);
+	}
+
+	public static DatastoreRouter datastoreRouter = null; 
+	public static List<String> taskName = new LinkedList<String>();
+	public static String dcolistJsonStr = null;
+	public static String gateHome = null;
+	public static String gatePluginHome = null;
+	public static List<PostponeExecutable> pexec = new LinkedList<PostponeExecutable>();
+	public static Collection<URL> gateCreoleDir = new LinkedList<URL>();
+	
+	GateProject() {
+		
+	}
+	
+	final protected String helpMessage() {
+		return 
+				"Usage: load -e <file> [-t <file ..>] [-d <file ..>] [-v [level]]\n" +
+				"  or : run  -e <file> -t <taskName> -l <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]\n" +
+				"  or : --help, help\n" +
+				"\n" +
+				"Action 'load':\n" +
+				"    -e <file>     Required. Specify the center datastore.\n" +
+				"                            <file> is a datastore config file.\n" +
+				"    -t <file ..>  Optional. Define new task(s) and save to center datastore.\n" +
+				"                            <file ..> is a list of task config file.\n" +
+				"    -d <file ..>  Optional. Define new index datastore and save to center datastore.\n" +
+				"                            <file ..> is a list of datastore config file.\n" +
+				"    -v [level]    Optional. Enable debug mode.\n" +
+				"                            [level] is the debug level (1-3), default is 1.\n" +
+				"\n" +
+				"Action 'run':\n" +
+				"    -e <file>     Required. Specify the center datastore.\n" +
+				"                            <file> is a datastore config file.\n" +
+				"    -t <task ..>  Required. Specify the task(s) to be executed.\n" +
+				"                            <task ..> is the name of the task.\n" +
+				"    -l <file>     Required. Specify the local/web document(s) to be processed.\n" +
+				"                            <file> is a json file that contains a list of document path/url.\n" +
+				"    -g <path>     Optional. Set the path to GATE home\n"+
+				"    -p <path>     Optional. Set the path to GATE plugin home\n" +
+				"    -c <path ..>  Optional. Set the path(s) of Creole plugin directory(ies)\n" +
+				"    -v [level]    Optional. Enable debug mode.\n" +
+				"                            [level] is the debug level (1-3), default is 1.\n" +
+				"\n" +
+				"Action 'help'\n" +
+				"    or '--help':\n" +
+				"                  show this help message\n";
+	}
+	
+	final protected void exceptionHandler(Exception e) throws Exception {
+		Debug.println(3, "Unhandled Exception thrown to class GateProject!");
+		throw e;
+	}
+	
+	final protected void post(String[] s) throws Exception {
+		if (datastoreRouter == null) {
+			throw new CommandlineArgumentParseException("-e option annot be ommitted!");
+		}
+		for (PostponeExecutable pexe : pexec) {
+			pexe.run();
+		}
+		pexec = null;
+		Debug.info("All done!");
+	}
+	
+	abstract static class PostponeExecutable implements Executable {
+		String[] args;
+		final public void execute(String[] args) throws Exception {
+			prePostpone();
+			this.args = args;
+			pexec.add(this);
+		}
+		public void prePostpone() throws Exception {
+			;
+		}
+		abstract public void run() throws Exception;
+	}
+
+	final protected void registry() {
+		register("load", new ActionLoad());
+		register("reset", new ActionReset());
+		register("run", new ActionRun());
+	}
+	
+}
+
+class ActionLoad extends ActionHandler {
+	final protected void registry() {
+		register('v', new ChangeDebugLvl());
+		register('e', new SetCenterDatastore());
+		register('t', new SaveTask());
+		register('d', new SaveDatastore());
+	}
+}
+
+class ActionReset extends ActionHandler {
+	final protected void registry() {
+		register('e', new SetCenterDatastore());
+	}
+	final protected void post() {
+		GateProject.datastoreRouter.resetCenter();
+	}
+}
+
+class ActionRun extends ActionHandler {
+	final protected void registry() {
+		register('e', new SetCenterDatastore());
+		register('v', new ChangeDebugLvl());
+		register('t', new SetTaskAndRun());
+		register('l', new SetInitDocuments());
+		register('g', new SetGateHome());
+		register('p', new SetGatePluginHome());
+		register('c', new SetCreoleDirectory());
+	}
+}
+
+class ChangeDebugLvl implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			Debug.set(1);
+			return;
+		} else if (args.length == 1){
+			try {
+				int i;
+				i = Integer.parseInt(args[0]);
+				if (i < 1) {
+					throw new NumberFormatException();
+				}
+				Debug.set(i);
+			} catch (NumberFormatException e) {
+				throw new CommandlineArgumentParseException("Debug level should be an positive integer");
+			}
+		} else {
+			throw new CommandlineArgumentParseException("Too many arguments for option -v");
+		}
+	}
+}
+
+class SetCenterDatastore implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -e");
+		}
+		if (args.length > 1) {
+			throw new CommandlineArgumentParseException("Too many argument for option -e");
+		}
+		if (GateProject.datastoreRouter != null) {
+			throw new CommandlineArgumentParseException("-e option can only appear once. ");
+		}
+		GateProject.datastoreRouter = new DatastoreRouterImpl(JSON.parse(new File(args[0])).toString());
+	}
+}
+
+class SaveTask extends GateProject.PostponeExecutable {
+	public void run() throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -t");
+		}
+		for (int i = 0; i < args.length; i++) {
+			Task task;
+			JSON json;
+			json = JSON.parse(new File(args[i]));
+			Debug.println(3, "vaildate json by building the task");
+			task = new Task(json.toString());
+			GateProject.datastoreRouter.saveTask(task.getName(), json.toString());
+		}
+	}
+}
+
+class SaveDatastore extends GateProject.PostponeExecutable {
+	public void run() throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -t");
+		}
+		for (int i = 0; i < args.length; i++) {
+			JSON json;
+			json = JSON.parse(new File(args[i]));
+			GateProject.datastoreRouter.saveTask((String) json.get("name").toObject(), json.toString());
+		}
+	}
+}
+
+class SetGateHome implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -g");
+		}
+		if (args.length > 1) {
+			throw new CommandlineArgumentParseException("Too many argument for option -g");
+		}
+		GateProject.gateHome = args[0];
+	}
+}
+
+class SetGatePluginHome implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -p");
+		}
+		if (args.length > 1) {
+			throw new CommandlineArgumentParseException("Too many argument for option -p");
+		}
+		GateProject.gatePluginHome = args[0];
+	}
+}
+
+class SetCreoleDirectory implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -c");
+		}
+		for (int i = 0; i < args.length; i++) {
+			GateProject.gateCreoleDir.add((new File(args[i])).toURI().toURL());
+		}
+	}
+}
+
+class SetTaskAndRun extends GateProject.PostponeExecutable {
+	public void prePostpone() throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -t");
+		}
+		for (int i = 0; i < args.length; i++) {
+			GateProject.taskName.add(args[i]);
+		}
+	}
+	public void run() throws Exception {
+		if (GateProject.dcolistJsonStr == null) {
+			throw new CommandlineArgumentParseException("Option -l is required!");
+		}
+		GateProjectManager gpm;
+		gpm = new GateProjectManager(GateProject.datastoreRouter, GateProject.taskName, GateProject.dcolistJsonStr);
+		gpm.setGate(GateProject.gateHome, GateProject.gatePluginHome, GateProject.gateCreoleDir);
+		gpm.setDebug(Debug.level());
+		gpm.run();
+	}
+}
+
+class SetInitDocuments implements Executable {
+	public void execute(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new CommandlineArgumentParseException("Not enough argument for option -l");
+		}
+		if (args.length > 1) {
+			throw new CommandlineArgumentParseException("Too many argument for option -l");
+		}
+		GateProject.dcolistJsonStr = JSON.parse(new File(args[0])).toString();
+	}
+}

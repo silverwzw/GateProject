@@ -10,4 +10,5 @@ public interface Datastore {
 	public Collection<String> listAllTable();
 	public boolean isClosed();
 	public void close();
+	public void reConnect();
 }

@@ -8,7 +8,7 @@ public class Debug {
 	// 3: print stack, 2: trace calls, 1: some useful information
 	
 	private Debug(){};
-	//Singleton
+	//no instance
 	
 	final public static void set(int i) {
 		int old;

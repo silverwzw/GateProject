@@ -1,5 +1,7 @@
 package com.silverwzw.gate.datastore;
 
+import java.util.HashMap;
+
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.JSON.JSON.JsonStringFormatException;
@@ -7,32 +9,62 @@ import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
 import com.silvrewzw.gate.task.Task;
 
 public class DatastoreRouterImpl implements DatastoreRouter {
+	
+	private CenterDatastore cds = null;
+	private HashMap<String, IndexDatastore> idsm;
+	private String datastoreJsonStr;
+	
+	public DatastoreRouterImpl(String datastoreJsonStr) {
+		Debug.into(this, "<Constructor>");
+		Debug.println(3, "Connecting center datastore");
+		this.datastoreJsonStr = datastoreJsonStr;
+		cds = center();
+		if (cds.centerDatastoreNeedInit()) {
+			cds.initCenterDatastore();
+		}
+		idsm = new HashMap<String, IndexDatastore>();
+		Debug.out(this, "<Constructor>");
+	}
 
-	@Override
 	public void saveIndex(Task task, String url, Iterable<IndexEntry> iie) {
-		// TODO Auto-generated method stub
+		Debug.into(this, "saveIndex");
 		
+		String taskName;
+		String dbName;
+		
+		taskName = task.getName();
+		dbName = center().taskRouteDatastore(taskName);
+		
+		index(dbName).updateIndex(taskName, url, iie);
+		
+		Debug.out(this, "saveIndex");
 	}
 
-	@Override
-	public void saveCache(String url, String content) {
-		// TODO Auto-generated method stub
-		
+	final public void saveCache(String url, String content) {
+		Debug.into(this, "saveCache");
+		center().setDocumentCache(url, content);
+		Debug.out(this, "saveCache");
 	}
 
-	@Override
 	public void saveTask(String name, String taskJson) {
-		// TODO Auto-generated method stub
-		
+		Debug.into(this, "saveTask");
+		JSON json;
+		try {
+			json = JSON.parse(taskJson);
+		} catch (JsonStringFormatException e) {
+			throw new RuntimeException(e);
+		}
+		center().setTask(name, json.toString(), (String) json.get("datastore").toObject());
+		Debug.out(this, "saveTask");
 	}
 
-	@Override
-	public void saveDatastore(String name, String databaseJSON) {
-		// TODO Auto-generated method stub
-		
+	final public void saveDatastore(String name, String databaseJSON) {
+		Debug.into(this, "saveDatastore");
+		center().setDatastore(name, databaseJSON);
+		Debug.out(this, "saveDatastore");
 	}
-
-	private IndexDatastore DatastoreBuilder(String dbJsonStr) {
+	
+	private Datastore datastoreBuilder(String dbJsonStr) {
 		Debug.into(this, "DatastoreBuilder");
 		
 		JSON json;
@@ -55,5 +87,35 @@ public class DatastoreRouterImpl implements DatastoreRouter {
 		
 		Debug.out(this, "DatastoreBuilder");
 		return retVal;
+	}
+	
+	final private CenterDatastore center() {
+		return (cds != null && !cds.isClosed()) ? cds : (CenterDatastore) datastoreBuilder(datastoreJsonStr);
+	}
+	
+	final private IndexDatastore index(String indexDatastoreName) {
+		IndexDatastore retVal;
+		
+		retVal = idsm.get(indexDatastoreName);
+		if (retVal == null || retVal.isClosed()) {
+			Debug.println(3, "lazy load - datastore '" + indexDatastoreName + '\'');
+			retVal = (IndexDatastore) datastoreBuilder(center().getDatastore(indexDatastoreName));
+			if (retVal.indexDatastoreNeedInit()) {
+				retVal.initIndexDatastore();
+			}
+			idsm.put(indexDatastoreName, retVal);
+		}
+		
+		return retVal;
+	}
+
+	final public void reConnectCenter() {
+		if (cds.isClosed()) {
+			cds.reConnect();
+		}
+	}
+
+	final public void resetCenter() {
+		cds.initCenterDatastore();
 	}
 }

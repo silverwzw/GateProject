@@ -19,6 +19,7 @@ import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
 final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 	
 	private Connection conn;
+	String connStr,u,p;
 	static Pattern identifierTest = Pattern.compile("^[a-zA-Z_][a-zA-Z_0-9]*$");
 	
 	@SuppressWarnings("serial")
@@ -65,6 +66,9 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 	
 	public JDBC_MySQL_impl (String connStr, String user, String passwd) {
 		Debug.into(this, "<Constructor>");
+		this.connStr = connStr;
+		u = user;
+		p = passwd;
 		ConstructorImpl(connStr, user, passwd);
 		Debug.out(this, "<Constructor>");
 	}
@@ -730,5 +734,21 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 		
 		Debug.out(this, "getDatastore");
 		return retVal;
+	}
+
+	final public void reConnect() {
+		Debug.into(this, "reConnect");
+		if (isClosed()) {
+			Debug.info("Re-connected to Database via JDBC.");
+			try {
+				conn = DriverManager.getConnection(connStr,u,p);
+			} catch (SQLException e) {
+				throw new ImplSQLException(e);
+			}
+			Debug.info("Successfully connected to Database via JDBC.");
+		} else {
+			Debug.println(3, "Already connected.");
+		}
+		Debug.out(this, "reConnect");
 	}
 }

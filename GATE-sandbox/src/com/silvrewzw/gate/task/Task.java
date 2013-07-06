@@ -188,7 +188,7 @@ public class Task {
 			
 		}
 
-		Debug.into(this, "buildController");
+		Debug.out(this, "buildController");
 		return cc;
 	}
 	

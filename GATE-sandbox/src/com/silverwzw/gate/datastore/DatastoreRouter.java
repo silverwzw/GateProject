@@ -8,4 +8,6 @@ public interface DatastoreRouter {
 	public void saveCache(String url, String content);
 	public void saveTask(String name, String taskJson);
 	public void saveDatastore(String name, String databaseJSON);
+	public void reConnectCenter();
+	public void resetCenter();
 }
