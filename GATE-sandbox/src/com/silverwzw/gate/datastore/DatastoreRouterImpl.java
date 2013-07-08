@@ -1,6 +1,9 @@
 package com.silverwzw.gate.datastore;
 
+import gate.Annotation;
+
 import java.util.HashMap;
+import java.util.Set;
 
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
@@ -26,7 +29,7 @@ public class DatastoreRouterImpl implements DatastoreRouter {
 		Debug.out(this, "<Constructor>");
 	}
 
-	public void saveIndex(Task task, String url, Iterable<IndexEntry> iie) {
+	public void saveIndex(Task task, String url, Set<Annotation> annotSet) {
 		Debug.into(this, "saveIndex");
 		
 		String taskName;
@@ -35,7 +38,7 @@ public class DatastoreRouterImpl implements DatastoreRouter {
 		taskName = task.getName();
 		dbName = center().taskRouteDatastore(taskName);
 		
-		index(dbName).updateIndex(taskName, url, iie);
+		index(dbName).updateIndex(taskName, url, annotSet);
 		
 		Debug.out(this, "saveIndex");
 	}
@@ -117,5 +120,9 @@ public class DatastoreRouterImpl implements DatastoreRouter {
 
 	final public void resetCenter() {
 		cds.initCenterDatastore();
+	}
+
+	public String getTask(String taskName) {
+		return cds.getTask(taskName);
 	}
 }

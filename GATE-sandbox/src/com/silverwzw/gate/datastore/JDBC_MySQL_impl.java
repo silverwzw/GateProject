@@ -1,13 +1,18 @@
 package com.silverwzw.gate.datastore;
 
+import gate.Annotation;
+import gate.AnnotationSet;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.silverwzw.Debug;
@@ -280,7 +285,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 		Debug.println(3, "Creating new meta table :'gate_task_table'");
 		executeUpdate("CREATE TABLE gate_task_table (task_name VARCHAR(127) NOT NULL, table_name VARCHAR(127) NOT NULL, UNIQUE (table_name), PRIMARY KEY (task_name));");
 		Debug.println(3, "Creating new meta table :'gate_url_list'");
-		executeUpdate("CREATE TABLE gate_url_list (id INT NOT NULL AUTO_INCREMENT, url VARCHAR(2047) NOT NULL, UNIQUE (url), PRIMARY KEY (id));");
+		executeUpdate("CREATE TABLE gate_url_list (id INT NOT NULL AUTO_INCREMENT, url VARCHAR(2047) NOT NULL, UNIQUE (url(127)), PRIMARY KEY (id));");
 		Debug.out(this, "initIndexDatastore");
 	}
 	
@@ -291,7 +296,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 		lt = listAllTable();
 		
 		Debug.out(this, "indexDatastoreNeedInit");
-		return (lt.contains("gate_task_table") && lt.contains("gate_url_list"));
+		return !(lt.contains("gate_task_table") && lt.contains("gate_url_list"));
 	}
 	
 	final private String getIndexTable(String taskName) {
@@ -343,7 +348,6 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 			ps.setString(1, url);
 			Debug.println(3, "Querying url id of '" + url + "'");
 			rs = ps.executeQuery();
-			ps.close();
 
 			if (rs.next()) {
 				ret = rs.getInt("id");
@@ -379,7 +383,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 		return ret;
 	}
 	
-	public void updateIndex(String taskName, String url, Iterable<IndexEntry> ii) {
+	public void updateIndex(String taskName, String url, Set<Annotation> annotSet) {
 		Debug.into(this, "updateIndex");
 		
 		// check taskName
@@ -409,12 +413,12 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 			
 			Debug.println(2, "Inserting new index entry");
 			
-			for (IndexEntry ie : ii) {
+			for (Annotation annot : annotSet) {
 				try {
 					ps = conn.prepareStatement("INSERT INTO " + table_name + " (url_id, start, end) VALUES (?, ?, ?) ;");
 					ps.setInt(1, url_id);
-					ps.setInt(2, (int)ie.getStart());
-					ps.setInt(3, (int)ie.getEnd());
+					ps.setInt(2, (int)(long)annot.getStartNode().getOffset());
+					ps.setInt(3, (int)(long)annot.getStartNode().getOffset());
 					ps.executeUpdate();
 				} finally {
 					if (ps != null && !ps.isClosed()) {
@@ -435,18 +439,38 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 	public void initCenterDatastore() {
 		Debug.into(this, "initCenterDatastore");
 		
+		
+
 		Debug.println(3, "Trying to drop old tables");
-		for (String tableName : listAllTable()) {
-			if (tableName.equals("gate_task") || tableName.equals("gate_db") || tableName.equals("gate_cache")) {
-				executeUpdate("DROP TABLE " + tableName + " ;");
+		try {
+			executeUpdate("DROP INDEX gate_cache_url_index;");
+		} catch (ImplSQLException e) {
+			Debug.info("Index gate_cache_url_index not found");
+		}
+		
+		
+		Debug.println(3, "Trying to drop old tables");
+		ArrayList<String> table2Drop = new ArrayList<String>(3);
+		
+		
+		table2Drop.add(0, "gate_cache"); // 1st tp drop, seq matters (since foreign key constrain)
+		table2Drop.add(1, "gate_task");
+		table2Drop.add(2, "gate_db");
+		Collection<String> allTable = listAllTable();
+		for (String tbName : table2Drop) {
+			if (allTable.contains(tbName)) {
+				executeUpdate("DROP TABLE " + tbName + " ;");
 			}
 		}
+		
+		
 		
 		Debug.println(3, "init new tables of Center Datastore");
 		
 		executeUpdate("CREATE TABLE gate_db (db_name VARCHAR(127) NOT NULL, db_json TEXT NOT NULL, PRIMARY KEY(db_name));");
-		executeUpdate("CREATE TABLE gate_task (task_name VARCHAR(127) NOT NULL, task_json TEXT NOT NULL, db_name VARCHAR(127) NOT NULL, PRIMARY KEY(task_name), FOREIGN KEY (db_name) REFERENCES gate_db(db_name) ;");
-		executeUpdate("CREATE TABLE gate_cache (url VARCHAR(2047) NOT NULL, content TEXT NOT NULL, PRIMARY KEY(url));");
+		executeUpdate("CREATE TABLE gate_task (task_name VARCHAR(127) NOT NULL, task_json TEXT NOT NULL, db_name VARCHAR(127) NOT NULL, PRIMARY KEY(task_name), FOREIGN KEY (db_name) REFERENCES gate_db(db_name)) ;");
+		executeUpdate("CREATE TABLE gate_cache (url VARCHAR(2047) NOT NULL, content TEXT NOT NULL);");
+		executeUpdate("CREATE INDEX gate_cache_url_index ON gate_cache (url(64));");
 		
 		Debug.out(this,	"initCenterDatastore");
 	}
@@ -455,10 +479,12 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 		Debug.into(this, "centerDatastoreNeedInit");
 		
 		Collection<String> lt;
+		boolean retVal;
 		lt = listAllTable();
 		
+		retVal = !(lt.contains("gate_db") && lt.contains("gate_task") && lt.contains("gate_cache"));
 		Debug.out(this, "centerDatastoreNeedInit");
-		return (lt.contains("gate_db") && lt.contains("gate_task") && lt.contains("gate_cache"));
+		return retVal;
 	}
 	
 	public void setDocumentCache(String url, String content) {
@@ -486,7 +512,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 				Debug.println(3, "Creating new cache");
 				ps = conn.prepareStatement("INSERT INTO gate_cache (url, content) VALUES ( ? , ? ) ;");
 				ps.setString(1, url);
-				ps.setString(1, content);
+				ps.setString(2, content);
 				ps.executeUpdate();
 				ps.close();
 			}

@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import gate.Corpus;
 import gate.CorpusController;
 import gate.Factory;
 import gate.FeatureMap;

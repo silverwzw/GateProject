@@ -16,7 +16,6 @@ import com.silverwzw.cmdapp.SimpleCommandlineApplication.CommandlineArgumentPars
 import com.silverwzw.gate.datastore.DatastoreRouter;
 import com.silverwzw.gate.datastore.DatastoreRouterImpl;
 import com.silverwzw.gate.manager.GateProjectManager;
-import com.silvrewzw.gate.task.Task;
 
 public class GateProject extends SimpleCommandlineApplication {
 
@@ -38,21 +37,22 @@ public class GateProject extends SimpleCommandlineApplication {
 	
 	final protected String helpMessage() {
 		return 
-				"Usage: load -e <file> [-t <file ..>] [-d <file ..>] [-v [level]]\n" +
-				"  or : run  -e <file> -t <taskName> -l <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]\n" +
+				"Usage: load  -e <file> [-d <file ..>] [-t <file ..>] [-v [level]]\n" +
+				"  or : run   -e <file> -t <taskName> -l <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]\n" +
+				"  or : reset -e <file>\n" +
 				"  or : --help, help\n" +
 				"\n" +
-				"Action 'load':\n" +
+				"Action 'load': Load config file to datastore\n" +
 				"    -e <file>     Required. Specify the center datastore.\n" +
 				"                            <file> is a datastore config file.\n" +
-				"    -t <file ..>  Optional. Define new task(s) and save to center datastore.\n" +
-				"                            <file ..> is a list of task config file.\n" +
 				"    -d <file ..>  Optional. Define new index datastore and save to center datastore.\n" +
 				"                            <file ..> is a list of datastore config file.\n" +
+				"    -t <file ..>  Optional. Define new task(s) and save to center datastore.\n" +
+				"                            <file ..> is a list of task config file.\n" +
 				"    -v [level]    Optional. Enable debug mode.\n" +
 				"                            [level] is the debug level (1-3), default is 1.\n" +
 				"\n" +
-				"Action 'run':\n" +
+				"Action 'run': run a Task\n" +
 				"    -e <file>     Required. Specify the center datastore.\n" +
 				"                            <file> is a datastore config file.\n" +
 				"    -t <task ..>  Required. Specify the task(s) to be executed.\n" +
@@ -65,32 +65,30 @@ public class GateProject extends SimpleCommandlineApplication {
 				"    -v [level]    Optional. Enable debug mode.\n" +
 				"                            [level] is the debug level (1-3), default is 1.\n" +
 				"\n" +
+				"Action 'reset': reset datastore\n" +
+				"    -e <file>     Required. Specify the center datastore.\n" +
+				"                            <file> is a datastore config file.\n" +
+				"\n" +
 				"Action 'help'\n" +
-				"    or '--help':\n" +
+				"  or '--help':\n" +
 				"                  show this help message\n";
-	}
-	
-	final protected void exceptionHandler(Exception e) throws Exception {
-		Debug.println(3, "Unhandled Exception thrown to class GateProject!");
-		throw e;
 	}
 	
 	final protected void post(String[] s) throws Exception {
 		if (datastoreRouter == null) {
-			throw new CommandlineArgumentParseException("-e option annot be ommitted!");
+			throw new CommandlineArgumentParseException("option -e cannot be ommitted!");
 		}
 		for (PostponeExecutable pexe : pexec) {
 			pexe.run();
 		}
 		pexec = null;
-		Debug.info("All done!");
 	}
 	
 	abstract static class PostponeExecutable implements Executable {
 		String[] args;
 		final public void execute(String[] args) throws Exception {
-			prePostpone();
 			this.args = args;
+			prePostpone();
 			pexec.add(this);
 		}
 		public void prePostpone() throws Exception {
@@ -111,13 +109,14 @@ class ActionLoad extends ActionHandler {
 	final protected void registry() {
 		register('v', new ChangeDebugLvl());
 		register('e', new SetCenterDatastore());
-		register('t', new SaveTask());
 		register('d', new SaveDatastore());
+		register('t', new SaveTask());
 	}
 }
 
 class ActionReset extends ActionHandler {
 	final protected void registry() {
+		register('v', new ChangeDebugLvl());
 		register('e', new SetCenterDatastore());
 	}
 	final protected void post() {
@@ -180,12 +179,9 @@ class SaveTask extends GateProject.PostponeExecutable {
 			throw new CommandlineArgumentParseException("Not enough argument for option -t");
 		}
 		for (int i = 0; i < args.length; i++) {
-			Task task;
 			JSON json;
 			json = JSON.parse(new File(args[i]));
-			Debug.println(3, "vaildate json by building the task");
-			task = new Task(json.toString());
-			GateProject.datastoreRouter.saveTask(task.getName(), json.toString());
+			GateProject.datastoreRouter.saveTask((String) json.get("name").toObject(), json.toString());
 		}
 	}
 }
@@ -193,12 +189,12 @@ class SaveTask extends GateProject.PostponeExecutable {
 class SaveDatastore extends GateProject.PostponeExecutable {
 	public void run() throws Exception {
 		if (args.length == 0) {
-			throw new CommandlineArgumentParseException("Not enough argument for option -t");
+			throw new CommandlineArgumentParseException("Not enough argument for option -d");
 		}
 		for (int i = 0; i < args.length; i++) {
 			JSON json;
 			json = JSON.parse(new File(args[i]));
-			GateProject.datastoreRouter.saveTask((String) json.get("name").toObject(), json.toString());
+			GateProject.datastoreRouter.saveDatastore((String) json.get("name").toObject(), json.toString());
 		}
 	}
 }
@@ -255,7 +251,7 @@ class SetTaskAndRun extends GateProject.PostponeExecutable {
 		gpm = new GateProjectManager(GateProject.datastoreRouter, GateProject.taskName, GateProject.dcolistJsonStr);
 		gpm.setGate(GateProject.gateHome, GateProject.gatePluginHome, GateProject.gateCreoleDir);
 		gpm.setDebug(Debug.level());
-		gpm.run();
+		(new Thread(gpm)).start();
 	}
 }
 

@@ -14,7 +14,9 @@ public class Debug {
 		int old;
 		old = level;
 		level = i > 0 ? i : 0;
-		println(0, "debug level change from " + old + " to "+ level);
+		if (old != level) {
+			println(0, "debug level change from " + old + " to "+ level);
+		}
 	}
 	
 	final public static boolean ge(int i) {

@@ -1,16 +1,31 @@
 package com.silverwzw.gate.manager;
 
+import gate.Corpus;
+import gate.Document;
+import gate.Factory;
 import gate.Gate;
+import gate.corpora.DocumentImpl;
+import gate.creole.ExecutionException;
+import gate.creole.ResourceInstantiationException;
 import gate.util.GateException;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.silverwzw.Debug;
+import com.silverwzw.JSON.JSON;
 import com.silverwzw.gate.datastore.DatastoreRouter;
+import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
+import com.silvrewzw.gate.task.Task;
 
 final public class GateProjectManager implements Runnable {
 	
@@ -65,9 +80,121 @@ final public class GateProjectManager implements Runnable {
 	}
 	public void run() {
 		Debug.set(debugLevel);
-		Debug.info("new Thread '" + this.hashCode() + "' is running.");
+		Debug.info("new Thread '" + Thread.currentThread().getName() + "' is running.");
 		InitGate();
 		dr.reConnectCenter();
-		Debug.info("Thread '" + this.hashCode() + "' stopped.");
-	};
+		
+		Collection<Task> taskCollection;
+		taskCollection = new LinkedList<Task>();
+		for (String taskN : taskName) {
+			Debug.println(3, "Building Task '" + taskN + "'.");
+			taskCollection.add(new Task(dr.getTask(taskN)));
+		}
+		process(taskCollection, createInitCorpus());
+		Debug.info("Thread '" + Thread.currentThread().getName() + "' stopped.");
+	}
+	final private Corpus createInitCorpus() {
+		Debug.into(this, "createInitCorpus");
+		JSON json;
+		Collection<URL> urlList;
+		Corpus corpus;
+		
+		urlList = new LinkedList<URL>();
+		try {
+			json = JSON.parse(doclistJsonStr);
+		} catch (JSON.JsonStringFormatException e) {
+			throw new RuntimeException(e);
+		}
+		
+		// process local documents
+		Debug.println(3, "process local file/directory list to URL list");
+		JSON local = json.get("local");
+		if (local != null) {
+			for (Entry<String, JSON> e : local) {
+				addLocal(urlList, new File((String) e.getValue().toObject()));
+			}
+		}
+
+		// process web documents
+		Debug.println(3, "process web URL list");
+		JSON web = json.get("web");
+		if (web != null) {
+			for (Entry<String, JSON> e : web) {
+				String urlStr;
+				urlStr = (String) e.getValue().toObject();
+				Debug.println(3, "found web doc " + urlStr);
+				try {
+					urlList.add(new URL(urlStr));
+				} catch (MalformedURLException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+		}
+		
+		try {
+			corpus =  Factory.newCorpus("init Corpus");
+			for (URL u : urlList) {
+				Document doc = new DocumentImpl();
+				Debug.println(3, "change url to gate.Document : " + u);
+	    		doc.setSourceUrl(u);
+	    		doc.init();
+				Debug.println(3, "add document to Corpus: " + corpus.getName());
+	    		corpus.add(doc);
+			}
+		} catch (ResourceInstantiationException e) {
+			throw new RuntimeException(e);
+		}
+		
+		Debug.out(this, "createInitCorpus");
+		return corpus;
+	}
+	
+	final private void addLocal(Collection<URL> urlList, File f) {
+		if (f.isFile()) {
+			Debug.println(3, "found file " + f.getAbsolutePath());
+			try {
+				urlList.add(new URL("file:///" + f.getAbsolutePath()));
+			} catch (MalformedURLException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		if (f.isDirectory()) {
+			Debug.println(3, "search directory " + f.getAbsolutePath());
+			for(File fChild : f.listFiles()) {
+				addLocal(urlList, fChild);
+			}
+		}
+	}
+	
+	final private void process(Collection<Task> taskCollection, Corpus corpus) {
+		Debug.into(GateProjectManager.class, "process");
+		for (Task task : taskCollection) {
+			Debug.info("Executing task '" + task.getName() + "'.");
+			task.getController().setCorpus(corpus);
+			try {
+				task.getController().execute();
+			} catch (ExecutionException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+
+		for (Document doc : corpus) {
+			String url;
+			url = doc.getSourceUrl().toString();
+			
+			for (Task task : taskCollection) {
+				task.getFilter().resetScenario();
+				task.getFilter().setScenario(doc.getAnnotations());
+				Debug.info("Saving indexes of task '" + task.getName() + "' on Document '" + url + "'.");
+				dr.saveIndex(task, url, task.getFilter().findAll());
+			}
+			
+			dr.saveCache(doc.getSourceUrl().toString(), doc.getContent().toString());
+			
+		}
+		
+		Debug.out(GateProjectManager.class, "process");
+	}
 }
