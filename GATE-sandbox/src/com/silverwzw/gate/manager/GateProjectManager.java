@@ -1,5 +1,6 @@
 package com.silverwzw.gate.manager;
 
+import gate.Annotation;
 import gate.Corpus;
 import gate.Document;
 import gate.Factory;
@@ -10,21 +11,21 @@ import gate.creole.ResourceInstantiationException;
 import gate.util.GateException;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.gate.datastore.DatastoreRouter;
-import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
+import com.silverwzw.gate.task.filter.AnnotationFilter;
 import com.silvrewzw.gate.task.Task;
 
 final public class GateProjectManager implements Runnable {
@@ -181,20 +182,60 @@ final public class GateProjectManager implements Runnable {
 		
 
 		for (Document doc : corpus) {
-			String url;
+			String url, cache;
+			Set<Annotation> allTaskResult, taskResult;
+			
 			url = doc.getSourceUrl().toString();
+			allTaskResult = new HashSet<Annotation>();
 			
 			for (Task task : taskCollection) {
 				task.getFilter().resetScenario();
 				task.getFilter().setScenario(doc.getAnnotations());
 				Debug.info("Saving indexes of task '" + task.getName() + "' on Document '" + url + "'.");
-				dr.saveIndex(task, url, task.getFilter().findAll());
+				taskResult = task.getFilter().findAll();
+				dr.saveIndex(task, url, taskResult);
+				allTaskResult.addAll(taskResult);
 			}
 			
-			dr.saveCache(doc.getSourceUrl().toString(), doc.getContent().toString());
-			
+			cache = cache(doc.getContent().toString(), allTaskResult);
+			if (cache != "" && !cache.equals("")) {
+				dr.saveCache(doc.getSourceUrl().toString(), cache);
+			}
 		}
 		
 		Debug.out(GateProjectManager.class, "process");
+	}
+	
+	private String cache(String doc, Set<Annotation> al) {
+		SortedSet<Annotation> ssa;
+		String retVal;
+		long start,end;
+		
+		start = 0;
+		end = 0;
+		retVal = "";
+		ssa = new TreeSet<Annotation>(new AnnotationFilter.AnnotationComparatorByStartNode());
+		ssa.addAll(al);
+		
+		for (Annotation a : al) {
+			long soa, eoa;
+			soa = a.getStartNode().getOffset();
+			eoa = a.getEndNode().getOffset();
+			if (soa > end) {
+				retVal += doc.substring((int)start, (int)end);
+				start = soa;
+				end = eoa;
+			} else if (end < eoa) {
+				end = eoa ;
+			}
+		}
+		
+		return retVal + doc.substring((int)start, (int)end);
+	}
+	
+	private void printAnnotSet(Set<Annotation> as) {
+		for (Annotation a : as) {
+			Debug.info("Annot :" + a.getStartNode().getOffset() + " , " + a.getEndNode().getOffset());
+		}
 	}
 }

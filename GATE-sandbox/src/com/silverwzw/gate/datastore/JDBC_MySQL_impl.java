@@ -1,7 +1,6 @@
 package com.silverwzw.gate.datastore;
 
 import gate.Annotation;
-import gate.AnnotationSet;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,7 +17,6 @@ import java.util.regex.Pattern;
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.JSON.JSON.JsonStringFormatException;
-import com.silverwzw.gate.manager.AnnotationIndex.IndexEntry;
 
 
 final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
@@ -418,7 +416,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 					ps = conn.prepareStatement("INSERT INTO " + table_name + " (url_id, start, end) VALUES (?, ?, ?) ;");
 					ps.setInt(1, url_id);
 					ps.setInt(2, (int)(long)annot.getStartNode().getOffset());
-					ps.setInt(3, (int)(long)annot.getStartNode().getOffset());
+					ps.setInt(3, (int)(long)annot.getEndNode().getOffset());
 					ps.executeUpdate();
 				} finally {
 					if (ps != null && !ps.isClosed()) {
@@ -505,7 +503,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 				Debug.println(3, "Replaceing old cache");
 				ps = conn.prepareStatement("UPDATE gate_cache SET content = ? WHERE url = ? ;");
 				ps.setString(1, content);
-				ps.setString(1, url);
+				ps.setString(2, url);
 				ps.executeUpdate();
 				ps.close();
 			} else {

@@ -13,7 +13,7 @@ import gate.Annotation;
 public abstract class AnnotationFilter implements Cloneable, Serializable {
 	protected transient Set<Annotation> scenario;
 
-	protected static class AnnotationComparatorByStartNode implements Comparator<Annotation> {
+	public static class AnnotationComparatorByStartNode implements Comparator<Annotation> {
 		public int compare(Annotation annot, Annotation o) {
 			long s;
 			s = annot.getStartNode().getOffset() - o.getStartNode().getOffset();

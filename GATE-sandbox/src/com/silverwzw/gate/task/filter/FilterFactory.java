@@ -16,6 +16,7 @@ public class FilterFactory {
 		register("FeatureMajorType", FeatureMajorTypeFilter.class);
 		register("Type", TypeFilter.class);
 		register("Contains", ContainsFilter.class);
+		register("Weighted", WeightedFilter.class);
 	}
 	static class FilterBuilder {
 		JSON treeList, filterList;
