@@ -17,7 +17,9 @@ public class FilterFactory {
 		register("Type", TypeFilter.class);
 		register("Contains", ContainsFilter.class);
 		register("Weighted", WeightedFilter.class);
+		register("Paragraph", ParagraphFilter.class);
 	}
+	
 	static class FilterBuilder {
 		JSON treeList, filterList;
 		FilterBuilder(JSON json) {

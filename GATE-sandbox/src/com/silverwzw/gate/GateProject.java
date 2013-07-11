@@ -181,6 +181,7 @@ class SaveTask extends GateProject.PostponeExecutable {
 		for (int i = 0; i < args.length; i++) {
 			JSON json;
 			json = JSON.parse(new File(args[i]));
+
 			GateProject.datastoreRouter.saveTask((String) json.get("name").toObject(), json.toString());
 		}
 	}

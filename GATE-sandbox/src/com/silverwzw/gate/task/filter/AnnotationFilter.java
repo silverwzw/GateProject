@@ -11,7 +11,7 @@ import gate.Annotation;
 
 @SuppressWarnings("serial")
 public abstract class AnnotationFilter implements Cloneable, Serializable {
-	protected transient Set<Annotation> scenario;
+	protected transient SortedSet<Annotation> scenario;
 
 	public static class AnnotationComparatorByStartNode implements Comparator<Annotation> {
 		public int compare(Annotation annot, Annotation o) {
@@ -48,7 +48,8 @@ public abstract class AnnotationFilter implements Cloneable, Serializable {
 		if (s == null) {
 			throw new NullPointerException();
 		}
-		scenario = s;
+		scenario = new TreeSet<Annotation>(new AnnotationComparatorByStartNode());
+		scenario.addAll(s);
 	}
 	public SortedSet<Annotation> findAll() {
 		TreeSet<Annotation> result;

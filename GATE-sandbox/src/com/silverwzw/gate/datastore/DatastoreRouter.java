@@ -4,7 +4,7 @@ import java.util.Set;
 
 import gate.Annotation;
 
-import com.silvrewzw.gate.task.Task;
+import com.silverwzw.gate.task.Task;
 
 public interface DatastoreRouter {
 	public void saveIndex(Task task, String url, Set<Annotation> annotSet);

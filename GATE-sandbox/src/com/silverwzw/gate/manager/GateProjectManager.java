@@ -25,8 +25,8 @@ import java.util.TreeSet;
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.gate.datastore.DatastoreRouter;
+import com.silverwzw.gate.task.Task;
 import com.silverwzw.gate.task.filter.AnnotationFilter;
-import com.silvrewzw.gate.task.Task;
 
 final public class GateProjectManager implements Runnable {
 	
@@ -37,6 +37,7 @@ final public class GateProjectManager implements Runnable {
 	private DatastoreRouter dr;
 	private List<String> taskName;
 	private String doclistJsonStr;
+	
 	
 	public GateProjectManager(DatastoreRouter dr, List<String> taskName, String doclistJsonStr){
 		this.dr = dr;
@@ -97,10 +98,12 @@ final public class GateProjectManager implements Runnable {
 	final private Corpus createInitCorpus() {
 		Debug.into(this, "createInitCorpus");
 		JSON json;
-		Collection<URL> urlList;
+		Collection<URL> localUrlList,webUrlList;
 		Corpus corpus;
+
+		localUrlList = new LinkedList<URL>();
+		webUrlList = new LinkedList<URL>();
 		
-		urlList = new LinkedList<URL>();
 		try {
 			json = JSON.parse(doclistJsonStr);
 		} catch (JSON.JsonStringFormatException e) {
@@ -112,7 +115,7 @@ final public class GateProjectManager implements Runnable {
 		JSON local = json.get("local");
 		if (local != null) {
 			for (Entry<String, JSON> e : local) {
-				addLocal(urlList, new File((String) e.getValue().toObject()));
+				addLocal(localUrlList, new File((String) e.getValue().toObject()));
 			}
 		}
 
@@ -125,7 +128,7 @@ final public class GateProjectManager implements Runnable {
 				urlStr = (String) e.getValue().toObject();
 				Debug.println(3, "found web doc " + urlStr);
 				try {
-					urlList.add(new URL(urlStr));
+					webUrlList.add(new URL(urlStr));
 				} catch (MalformedURLException ex) {
 					throw new RuntimeException(ex);
 				}
@@ -134,10 +137,19 @@ final public class GateProjectManager implements Runnable {
 		
 		try {
 			corpus =  Factory.newCorpus("init Corpus");
-			for (URL u : urlList) {
+			for (URL u : localUrlList) {
 				Document doc = new DocumentImpl();
-				Debug.println(3, "change url to gate.Document : " + u);
+				Debug.println(3, "change local url to gate.Document : " + u);
 	    		doc.setSourceUrl(u);
+	    		doc.init();
+				Debug.println(3, "add document to Corpus: " + corpus.getName());
+	    		corpus.add(doc);
+			}
+			for (URL u : webUrlList) {
+				Document doc = new DocumentImpl();
+				Debug.println(3, "change web url to gate.Document : " + u);
+	    		doc.setSourceUrl(u);
+	    		doc.setMarkupAware(true);
 	    		doc.init();
 				Debug.println(3, "add document to Corpus: " + corpus.getName());
 	    		corpus.add(doc);
@@ -183,14 +195,22 @@ final public class GateProjectManager implements Runnable {
 
 		for (Document doc : corpus) {
 			String url, cache;
-			Set<Annotation> allTaskResult, taskResult;
+			SortedSet<Annotation> allTaskResult, taskResult;
 			
 			url = doc.getSourceUrl().toString();
-			allTaskResult = new HashSet<Annotation>();
+			allTaskResult = new TreeSet<Annotation>(new AnnotationFilter.AnnotationComparatorByStartNode());
 			
 			for (Task task : taskCollection) {
+				Set<Annotation> allAnnotSet;
+				allAnnotSet = new HashSet<Annotation>();
+				
+				for (String setNames : doc.getAnnotationSetNames()) {
+					allAnnotSet.addAll(doc.getAnnotations(setNames));
+				}
+				allAnnotSet.addAll(doc.getAnnotations());
+				
 				task.getFilter().resetScenario();
-				task.getFilter().setScenario(doc.getAnnotations());
+				task.getFilter().setScenario(allAnnotSet);
 				Debug.info("Saving indexes of task '" + task.getName() + "' on Document '" + url + "'.");
 				taskResult = task.getFilter().findAll();
 				dr.saveIndex(task, url, taskResult);
@@ -206,7 +226,7 @@ final public class GateProjectManager implements Runnable {
 		Debug.out(GateProjectManager.class, "process");
 	}
 	
-	private String cache(String doc, Set<Annotation> al) {
+	private String cache(String doc, SortedSet<Annotation> al) {
 		SortedSet<Annotation> ssa;
 		String retVal;
 		long start,end;
@@ -222,20 +242,21 @@ final public class GateProjectManager implements Runnable {
 			soa = a.getStartNode().getOffset();
 			eoa = a.getEndNode().getOffset();
 			if (soa > end) {
-				retVal += doc.substring((int)start, (int)end);
+				retVal += doc.substring((int)start, (int)end) + "\n\n";
 				start = soa;
 				end = eoa;
 			} else if (end < eoa) {
 				end = eoa ;
 			}
 		}
-		
 		return retVal + doc.substring((int)start, (int)end);
 	}
 	
 	private void printAnnotSet(Set<Annotation> as) {
 		for (Annotation a : as) {
-			Debug.info("Annot :" + a.getStartNode().getOffset() + " , " + a.getEndNode().getOffset());
+			if (!a.getType().equals("Lookup") && !a.getType().equals("Token") && !a.getType().equals("SpaceToken") && !a.getType().equals("Split") && !a.getType().equals("Sentence")) {
+				Debug.info(a.toString());
+			}
 		}
 	}
 }

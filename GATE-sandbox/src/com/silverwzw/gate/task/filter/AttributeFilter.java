@@ -71,3 +71,29 @@ class TypeFilter extends AttributeFilter {
 		return "{<Type>: arg=" + type +"}";
 	}
 }
+
+@SuppressWarnings("serial")
+class ParagraphFilter extends AttributeFilter {
+	private static ParagraphFilter instance;
+	static {
+		instance = new ParagraphFilter();
+	}
+	public boolean satisfy(Annotation a) {
+		return a.getType().equals("p") || a.getType().equals("paragraph");
+	}
+	public ParagraphFilter clone() {
+		return instance;
+	}
+	public static ParagraphFilter build(JSON json, FilterBuilder fb) {
+		Debug.into(ParagraphFilter.class,"build");
+		
+		assert "Paragraph".equals((String)json.get("type").toObject());
+		
+		Debug.out(ParagraphFilter.class,"build");
+		
+		return instance;
+	}
+	public String toString() {
+		return "{<Paragraph>}";
+	}
+}
