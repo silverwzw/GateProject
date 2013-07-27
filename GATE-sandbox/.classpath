@@ -49,6 +49,5 @@
 	<classpathentry kind="lib" path="E:/Steven/Life/NCSU/Research/gate/lib/xpp3.jar"/>
 	<classpathentry kind="lib" path="E:/Steven/Life/NCSU/Research/gate/lib/xstream.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files (x86)/MySQL/Connector J 5.1.23/mysql-connector-java-5.1.23-bin.jar"/>
-	<classpathentry kind="lib" path="E:/Steven/CODE/jar/JSON.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
