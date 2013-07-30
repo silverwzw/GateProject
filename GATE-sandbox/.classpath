@@ -48,5 +48,6 @@
 	<classpathentry kind="lib" path="/usr/local/GATE/lib/xstream.jar"/>
 	<classpathentry kind="lib" path="/usr/local/GATE/bin/gate.jar"/>
 	<classpathentry kind="lib" path="/usr/local/GATE/bin/gateLauncher.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/mysql-connector-java.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

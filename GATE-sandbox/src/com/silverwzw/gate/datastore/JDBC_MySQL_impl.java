@@ -688,7 +688,7 @@ final public class JDBC_MySQL_impl implements IndexDatastore, CenterDatastore {
 			
 			if (update) {
 				Debug.println(3, "Updating db defination to datastore.");
-				ps = conn.prepareStatement("UPDATE gate_db SET datastore_json = ?  WHERE db_name = ? ;");
+				ps = conn.prepareStatement("UPDATE gate_db SET db_json = ?  WHERE db_name = ? ;");
 				ps.setString(1, datastoreJson);
 				ps.setString(2, name);
 				ps.executeUpdate();

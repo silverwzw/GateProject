@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 
+
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
 import com.silverwzw.cmdapp.Executable;
@@ -101,8 +102,14 @@ public class GateProject extends SimpleCommandlineApplication {
 		register("load", new ActionLoad());
 		register("reset", new ActionReset());
 		register("run", new ActionRun());
+		register("sandbox", new ActionSandbox());
+	}	
+}
+
+class ActionSandbox implements Executable  {
+	public void execute(String[] args) throws Exception {
+		
 	}
-	
 }
 
 class ActionLoad extends ActionHandler {

@@ -8,7 +8,6 @@ import gate.Gate;
 import gate.corpora.DocumentImpl;
 import gate.creole.ExecutionException;
 import gate.creole.ResourceInstantiationException;
-import gate.util.GateException;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -44,6 +43,7 @@ final public class GateProjectManager implements Runnable {
 		this.taskName = taskName;
 		this.doclistJsonStr = doclistJsonStr;
 	}
+	
 	public void setGate(String home, String plugin, Collection<URL> gateCreoleDir){
 		gateHome = home;
 		gatePluginHome = plugin;
@@ -71,6 +71,7 @@ final public class GateProjectManager implements Runnable {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+/*
 		try {
 			Gate.getCreoleRegister().registerDirectories((new File("E:/Steven/Life/NCSU/Research/gate/plugins/ANNIE")).toURI().toURL());
 		} catch (MalformedURLException e) {
@@ -78,6 +79,7 @@ final public class GateProjectManager implements Runnable {
 		} catch (GateException e) {
 			System.err.println("Warning! Error trying to load default ANNIE Plugin!");
 		}
+*/
 		Debug.out(GateProjectManager.class, "InitGate");
 	}
 	public void run() {
@@ -166,7 +168,7 @@ final public class GateProjectManager implements Runnable {
 		if (f.isFile()) {
 			Debug.println(3, "found file " + f.getAbsolutePath());
 			try {
-				urlList.add(new URL("file:///" + f.getAbsolutePath()));
+				urlList.add(new URL("file://" + f.getAbsolutePath()));
 			} catch (MalformedURLException e) {
 				throw new RuntimeException(e);
 			}
@@ -202,10 +204,14 @@ final public class GateProjectManager implements Runnable {
 			
 			for (Task task : taskCollection) {
 				Set<Annotation> allAnnotSet;
+				Set<String> annotSetNames;
 				allAnnotSet = new HashSet<Annotation>();
 				
-				for (String setNames : doc.getAnnotationSetNames()) {
-					allAnnotSet.addAll(doc.getAnnotations(setNames));
+				annotSetNames = doc.getAnnotationSetNames(); 
+				if (annotSetNames != null) {
+					for (String setNames : annotSetNames) {
+						allAnnotSet.addAll(doc.getAnnotations(setNames));
+					}
 				}
 				allAnnotSet.addAll(doc.getAnnotations());
 				
@@ -252,6 +258,7 @@ final public class GateProjectManager implements Runnable {
 		return retVal + doc.substring((int)start, (int)end);
 	}
 	
+	@SuppressWarnings("unused")
 	private void printAnnotSet(Set<Annotation> as) {
 		for (Annotation a : as) {
 			if (!a.getType().equals("Lookup") && !a.getType().equals("Token") && !a.getType().equals("SpaceToken") && !a.getType().equals("Split") && !a.getType().equals("Sentence")) {
