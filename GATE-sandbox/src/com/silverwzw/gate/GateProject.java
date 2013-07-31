@@ -1,10 +1,16 @@
 package com.silverwzw.gate;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+
+
 
 
 
@@ -38,9 +44,10 @@ public class GateProject extends SimpleCommandlineApplication {
 	
 	final protected String helpMessage() {
 		return 
-				"Usage: load  -e <file> [-d <file ..>] [-t <file ..>] [-v [level]]\n" +
-				"  or : run   -e <file> -t <taskName> -l <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]\n" +
-				"  or : reset -e <file>\n" +
+				"Usage: load   -e <file> [-d <file ..>] [-t <file ..>] [-v [level]]\n" +
+				"  or : run    -e <file> -t <taskName> -l <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]\n" +
+				"  or : reset  -e <file>\n" +
+				"  or : deamon -e <file> [-g <path>] [-p <path>] [-c <url ..>] [-v [level]]" +
 				"  or : --help, help\n" +
 				"\n" +
 				"Action 'load': Load config file to datastore\n" +
@@ -70,13 +77,20 @@ public class GateProject extends SimpleCommandlineApplication {
 				"    -e <file>     Required. Specify the center datastore.\n" +
 				"                            <file> is a datastore config file.\n" +
 				"\n" +
+				"Action 'deamon': run as deamon\n" + 
+				"    -e <file>     Required. Specify the center datastore.\n" +
+				"    -g <path>     Optional. Set the path to GATE home\n"+
+				"    -p <path>     Optional. Set the path to GATE plugin home\n" +
+				"    -c <path ..>  Optional. Set the path(s) of Creole plugin directory(ies)\n" +
+				"    -v [level]    Optional. Enable debug mode.\n" +
+				"\n" +
 				"Action 'help'\n" +
 				"  or '--help':\n" +
 				"                  show this help message\n";
 	}
 	
 	final protected void post(String[] s) throws Exception {
-		if (datastoreRouter == null) {
+		if (datastoreRouter == null && !s[0].equals("help") && !s[0].equals("--help") && !s[0].equals("sandbox")) {
 			throw new CommandlineArgumentParseException("option -e cannot be ommitted!");
 		}
 		for (PostponeExecutable pexe : pexec) {
@@ -108,7 +122,15 @@ public class GateProject extends SimpleCommandlineApplication {
 
 class ActionSandbox implements Executable  {
 	public void execute(String[] args) throws Exception {
+		URLConnection conn;
+		JSON json;
 		
+		Debug.set(3);
+		conn = new URL("https://www.googleapis.com/customsearch/v1?key=AIzaSyAxdsUVjbxnEV9FAfmK_5M9a2spo-uFL9g&cx=016567116349354999812:g_wwmaarfsa&q=cars&alt=json").openConnection();
+		conn.connect();
+
+		json = JSON.parse(conn.getInputStream());
+		Debug.info(json.toString());
 	}
 }
 
