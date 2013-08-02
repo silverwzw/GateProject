@@ -46,7 +46,7 @@ public abstract class JSON implements Cloneable,Serializable,Iterable<Entry<Stri
 	 * the version of the JSON class as String
 	 */
 	public static String version() {
-		return "0.1";
+		return "0.2";
 	}
 	/**
 	 * read a ASCII file contains one standard JSON string, objects in json will be parsed as HashMap<String,JSON>

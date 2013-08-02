@@ -10,8 +10,10 @@ import gate.creole.ExecutionException;
 import gate.creole.ResourceInstantiationException;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -23,6 +25,7 @@ import java.util.TreeSet;
 
 import com.silverwzw.Debug;
 import com.silverwzw.JSON.JSON;
+import com.silverwzw.JSON.JSON.JsonStringFormatException;
 import com.silverwzw.gate.datastore.DatastoreRouter;
 import com.silverwzw.gate.task.Task;
 import com.silverwzw.gate.task.filter.AnnotationFilter;
@@ -71,15 +74,6 @@ final public class GateProjectManager implements Runnable {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-/*
-		try {
-			Gate.getCreoleRegister().registerDirectories((new File("E:/Steven/Life/NCSU/Research/gate/plugins/ANNIE")).toURI().toURL());
-		} catch (MalformedURLException e) {
-			System.err.println("Warning! Error trying to load default ANNIE Plugin!");
-		} catch (GateException e) {
-			System.err.println("Warning! Error trying to load default ANNIE Plugin!");
-		}
-*/
 		Debug.out(GateProjectManager.class, "InitGate");
 	}
 	public void run() {
@@ -108,6 +102,7 @@ final public class GateProjectManager implements Runnable {
 		
 		try {
 			json = JSON.parse(doclistJsonStr);
+			
 		} catch (JSON.JsonStringFormatException e) {
 			throw new RuntimeException(e);
 		}
@@ -136,6 +131,79 @@ final public class GateProjectManager implements Runnable {
 				}
 			}
 		}
+		
+		// process search engine results documents
+		Debug.println(3, "fetching search engine results");
+		JSON search = json.get("search");
+		if (search != null) {
+			for (Entry<String, JSON> e : search) {
+				URLConnection conn;
+				String searchEngineID, apiKey, query, url;
+				JSON searchEntry;
+				int limit;
+				
+				
+				searchEntry = e.getValue();
+				searchEngineID = "016567116349354999812:g_wwmaarfsa";
+				apiKey = "AIzaSyAxdsUVjbxnEV9FAfmK_5M9a2spo-uFL9g";
+				limit = 100;
+				
+				if (searchEntry.isDirectValue()) {
+					query = (String) searchEntry.toObject();
+				} else {
+					if (searchEntry.get("engine") != null) {
+						searchEngineID = (String) searchEntry.get("engine").toObject();
+					}
+					if (searchEntry.get("key") != null) {
+						apiKey = (String) searchEntry.get("key").toObject();
+					}
+					if (searchEntry.get("limit") != null) {
+						limit = Math.round((float)(double)(Double) searchEntry.get("limit").toObject());
+					}
+					query = (String) searchEntry.get("q").toObject();
+				}
+				
+				url = "https://www.googleapis.com/customsearch/v1?key=" + apiKey + "&cx=" + searchEngineID + "&q=" + query + "&alt=json";
+				
+				Debug.println(3, "Querying Google: " + query);
+				
+				try {
+					while (true) {
+						conn = new URL(url).openConnection();
+						JSON queryResult;
+						queryResult = JSON.parse(conn.getInputStream());
+						if (queryResult.get("error")!=null) {
+							System.err.println("Google Custom Search API Error: " + ((String) queryResult.get("error").get("message").toObject()) + ", skip");
+							break;
+						}
+						for (Entry<String,JSON> e1 : queryResult.get("items")) {
+							if (limit <= 0) {
+								break;
+							}
+							String s;
+							s = (String)e1.getValue().get("link").toObject();
+							Debug.println(3, "found url from query:" + s);
+							webUrlList.add(new URL(s));
+							limit --;
+						}
+						if (limit > 0 && queryResult.get("queries").get("nextPage") != null) {
+							int nPageIndex;
+							nPageIndex = Math.round((float)(double)(Double) queryResult.get("queries").get("nextPage").at(0).get("startIndex").toObject());
+							url = "https://www.googleapis.com/customsearch/v1?key=" + apiKey + "&cx=" + searchEngineID + "&q=" + query + "&start=" + nPageIndex+ "&alt=json";
+						} else {
+							break;
+						}
+					}
+				} catch (MalformedURLException ex) {
+					System.err.println("Malformed URL: " + url + ", skip");
+				} catch (IOException e1) {
+					System.err.println("IO Error while fetching Google Result" + url+ ", skip");
+				} catch (JsonStringFormatException e1) {
+					System.err.println("JSON format error for: " + url+ ", skip");
+				}
+			}
+		}
+		
 		
 		try {
 			corpus =  Factory.newCorpus("init Corpus");
@@ -193,8 +261,6 @@ final public class GateProjectManager implements Runnable {
 				throw new RuntimeException(e);
 			}
 		}
-		
-
 		for (Document doc : corpus) {
 			String url, cache;
 			SortedSet<Annotation> allTaskResult, taskResult;
@@ -228,7 +294,6 @@ final public class GateProjectManager implements Runnable {
 				dr.saveCache(doc.getSourceUrl().toString(), cache);
 			}
 		}
-		
 		Debug.out(GateProjectManager.class, "process");
 	}
 	
