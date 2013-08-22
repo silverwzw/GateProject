@@ -15,6 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,15 +37,22 @@ final public class GateProjectManager implements Runnable {
 	private String gatePluginHome = null;
 	private Collection<URL> gateCreoleDir = null;
 	private int debugLevel = 0;
-	private DatastoreRouter dr;
-	private List<String> taskName;
-	private String doclistJsonStr;
+	private List<Job> jobs = Collections.synchronizedList(new LinkedList<Job>());
 	
 	
-	public GateProjectManager(DatastoreRouter dr, List<String> taskName, String doclistJsonStr){
-		this.dr = dr;
-		this.taskName = taskName;
-		this.doclistJsonStr = doclistJsonStr;
+	private static class Job {
+		Job(DatastoreRouter dr, List<String> taskName, String doclistJsonStr) {
+			this.dr = dr;
+			this.taskName = taskName;
+			this.doclistJsonStr = doclistJsonStr;
+		}
+		DatastoreRouter dr;
+		List<String> taskName;
+		String doclistJsonStr;
+	}
+	
+	public void addJob(DatastoreRouter dr, List<String> taskName, String doclistJsonStr){
+		jobs.add(new Job(dr, taskName, doclistJsonStr));
 	}
 	
 	public void setGate(String home, String plugin, Collection<URL> gateCreoleDir){
@@ -80,19 +88,21 @@ final public class GateProjectManager implements Runnable {
 		Debug.set(debugLevel);
 		Debug.info("new Thread '" + Thread.currentThread().getName() + "' is running.");
 		InitGate();
-		dr.reConnectCenter();
-		
-		Collection<Task> taskCollection;
-		taskCollection = new LinkedList<Task>();
-		for (String taskN : taskName) {
-			Debug.println(3, "Building Task '" + taskN + "'.");
-			taskCollection.add(new Task(dr.getTask(taskN)));
+		for (Job job : jobs) {
+			job.dr.reConnectCenter();
+			
+			Collection<Task> taskCollection;
+			taskCollection = new LinkedList<Task>();
+			for (String taskN : job.taskName) {
+				Debug.println(3, "Building Task '" + taskN + "'.");
+				taskCollection.add(new Task(job.dr.getTask(taskN)));
+			}
+			process(job.dr,taskCollection, createInitCorpus(job.doclistJsonStr));
 		}
-		process(taskCollection, createInitCorpus());
 		Debug.info("Thread '" + Thread.currentThread().getName() + "' stopped.");
 	}
-	final private Corpus createInitCorpus() {
-		Debug.into(this, "createInitCorpus");
+	final private static Corpus createInitCorpus(String doclistJsonStr) {
+		Debug.into(GateProjectManager.class, "createInitCorpus");
 		JSON json;
 		Collection<URL> localUrlList,webUrlList;
 		Corpus corpus;
@@ -228,11 +238,11 @@ final public class GateProjectManager implements Runnable {
 			throw new RuntimeException(e);
 		}
 		
-		Debug.out(this, "createInitCorpus");
+		Debug.out(GateProjectManager.class, "createInitCorpus");
 		return corpus;
 	}
 	
-	final private void addLocal(Collection<URL> urlList, File f) {
+	final static private void addLocal(Collection<URL> urlList, File f) {
 		if (f.isFile()) {
 			Debug.println(3, "found file " + f.getAbsolutePath());
 			try {
@@ -250,7 +260,7 @@ final public class GateProjectManager implements Runnable {
 		}
 	}
 	
-	final private void process(Collection<Task> taskCollection, Corpus corpus) {
+	final private void process(DatastoreRouter dr, Collection<Task> taskCollection, Corpus corpus) {
 		Debug.into(GateProjectManager.class, "process");
 		for (Task task : taskCollection) {
 			Debug.info("Executing task '" + task.getName() + "'.");

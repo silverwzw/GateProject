@@ -1,11 +1,16 @@
 package com.silverwzw.gate;
 
+import gate.Gate;
+
 import java.io.File;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+
+
 
 
 
@@ -21,6 +26,8 @@ import com.silverwzw.cmdapp.SimpleCommandlineApplication.CommandlineArgumentPars
 import com.silverwzw.gate.datastore.DatastoreRouter;
 import com.silverwzw.gate.datastore.DatastoreRouterImpl;
 import com.silverwzw.gate.manager.GateProjectManager;
+import com.silverwzw.google.api.GQuery;
+import com.silverwzw.thesis.mscs.DataHelper;
 
 public class GateProject extends SimpleCommandlineApplication {
 
@@ -120,15 +127,7 @@ public class GateProject extends SimpleCommandlineApplication {
 
 class ActionSandbox implements Executable  {
 	public void execute(String[] args) throws Exception {
-		URLConnection conn;
-		JSON json;
-		
-		Debug.set(3);
-		conn = new URL("https://www.googleapis.com/customsearch/v1?key=AIzaSyAxdsUVjbxnEV9FAfmK_5M9a2spo-uFL9g&cx=016567116349354999812:g_wwmaarfsa&q=cars&alt=json").openConnection();
-		conn.connect();
-
-		json = JSON.parse(conn.getInputStream());
-		Debug.info(json.toString());
+		System.out.print(DataHelper.getUrlMatrixCSV("edit+grep+sed", "edit+awk+sed", 100, 100));
 	}
 }
 
@@ -276,9 +275,10 @@ class SetTaskAndRun extends GateProject.PostponeExecutable {
 			throw new CommandlineArgumentParseException("Option -l is required!");
 		}
 		GateProjectManager gpm;
-		gpm = new GateProjectManager(GateProject.datastoreRouter, GateProject.taskName, GateProject.dcolistJsonStr);
+		gpm = new GateProjectManager();
 		gpm.setGate(GateProject.gateHome, GateProject.gatePluginHome, GateProject.gateCreoleDir);
 		gpm.setDebug(Debug.level());
+		gpm.addJob(GateProject.datastoreRouter, GateProject.taskName, GateProject.dcolistJsonStr);
 		(new Thread(gpm)).start();
 	}
 }
