@@ -1,6 +1,7 @@
 package com.silverwzw.thesis.mscs;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -21,6 +22,33 @@ public class DataHelper {
 		}
 		return csv;
 	}
+	public static void getUrlSeries(List<String> keywords, int sampleSize) {
+		List<String> ulist1,ulist2;
+		ulist1 = new GQuery(Helper.getSearchTerm(keywords, 1)).asUrlStringList(sampleSize);
+		for (int i = 2; i <= keywords.size(); i++) {
+			ulist2 = new GQuery(Helper.getSearchTerm(keywords, i)).asUrlStringList(sampleSize);
+			System.out.println(Helper.slice(ulist1, ulist1, sampleSize, sampleSize));
+			ulist1 = ulist2;
+		}
+	}
+	public static void testHelper() {
+		List<String> s1,s2;
+		s1 = new LinkedList<String>();
+		s2 = new LinkedList<String>();
+		s1.add("a");
+		s1.add("b");
+		s1.add("c");
+		s1.add("d");
+		s1.add("e");
+		s2.addAll(s1);
+		s1.add("e");
+		s1.add("f");
+		s1.add("j");
+		s2.add("g");
+		s2.add("h");
+		s2.add("i");
+		System.out.print(Helper.slice(s1, s2, s1.size(), s2.size()));
+	}
 }
 
 class Helper {
@@ -35,5 +63,12 @@ class Helper {
 		}
 		
 		return 1 - scounter.size()/(float)(dim1+dim2);
+	}
+	final static String getSearchTerm(List<String> keywords, int num) {
+		String st = keywords.get(0);
+		for (int i = 1; i < num; i++) {
+			st += "%20" + keywords.get(i);
+		}
+		return st;
 	}
 }

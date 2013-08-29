@@ -27,11 +27,16 @@ public class GQuery {
 	private int i = 10;
 	private String apiKey = "AIzaSyAxdsUVjbxnEV9FAfmK_5M9a2spo-uFL9g";
 	private String seID = "016567116349354999812:g_wwmaarfsa";
+	private boolean sync = false;
 	
 	public GQuery(String queryString) {
 		Debug.into(this, "<Constrcutor> : new query:" + queryString);
 		q = queryString;
 		Debug.out(this, "<Constrcutor>");
+	}
+	
+	final public void setSync(boolean isSync) {
+		sync = isSync;
 	}
 	
 	final public void setApiKey(String key) {
@@ -74,32 +79,47 @@ public class GQuery {
 		uList = new ArrayList<String>(docNum);
 		pageNum = (docNum%i == 0) ? (docNum / i) : (docNum / i +1);
 		qpage = new JSON[pageNum];
-		threadSignal = new CountDownLatch(pageNum);
-		
+
 		Debug.println(2, "fetching Google Query Result page");
-		for (cpagei = 0; cpagei < pageNum; cpagei++) {
-			new _GetGQPage(threadSignal,getGQURL(cpagei * i + 1), qpage, cpagei).start();
+		
+		if (!sync) {
+			threadSignal = new CountDownLatch(pageNum);
+			
+			for (cpagei = 0; cpagei < pageNum; cpagei++) {
+				new Thread(new _GetGQPage(threadSignal,getGQURL(cpagei * i + 1), qpage, cpagei)).start();
+			}
+			try {
+				threadSignal.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			
+			}
+		} else {
+			for (cpagei = 0; cpagei < pageNum; cpagei++) {
+				new _GetGQPage(null, getGQURL(cpagei * i + 1), qpage, cpagei).run();
+			}
 		}
-		try {
-			threadSignal.await();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
+		
 		Debug.println(2, "Parsing Google Query Result page");
 		for (JSON json : qpage) {
 			if (json == null || json.get("error") != null) {
-				System.err.println("Query failed.");
+				System.err.println("Query failed : " + ((json == null) ? "json == null" : "json.error != null"));
 				continue;
 			}
-			for (Entry<String,JSON> el : json.get("items")) {
-				if (docNum > 0) {
-					String link = (String)el.getValue().get("link").toObject();
-						uList.add(link);
-						docNum --;
+			try {
+				for (Entry<String,JSON> el : json.get("items")) {
+					if (docNum > 0) {
+						String link = (String)el.getValue().get("link").toObject();
+							uList.add(link);
+							docNum --;
+					}
+					if (docNum <= 0) {
+						break;
+					}
 				}
-				if (docNum <= 0) {
-					break;
-				}
+			} catch (RuntimeException ex) {
+				System.out.print(json.format());
+				throw ex;
 			}
 			if (docNum <= 0) {
 				break;
@@ -135,27 +155,32 @@ public class GQuery {
 		CountDownLatch threadSignal;
 		Corpus corpus;
 		Debug.println(2, "Buildiung Corpus");
-		threadSignal = new CountDownLatch(uList.size());
 		try {
 			corpus =  Factory.newCorpus(CorpusName);
 		} catch (ResourceInstantiationException ex) {
 			throw new RuntimeException(ex); 
 		}
-		
-		for (URL u : uList) {
-			new _GetGateDoc(threadSignal,u,corpus).start();
-		}
-		try {
-			threadSignal.await();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+		if (!sync) {
+			threadSignal = new CountDownLatch(uList.size());
+			for (URL u : uList) {
+				new Thread(new _GetGateDoc(threadSignal,u,corpus)).start();
+			}
+			try {
+				threadSignal.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			for (URL u : uList) {
+				new _GetGateDoc(null, u,corpus).run();
+			}
 		}
 		Debug.out(this, "asCorpus");
 		return corpus;
 	}
 }
 
-class _GetGQPage extends Thread {
+class _GetGQPage implements Runnable {
 	JSON[] pArr;
 	int index;
 	CountDownLatch countDownSig;
@@ -168,11 +193,13 @@ class _GetGQPage extends Thread {
 		q = queryURL;
 	}
 	public void run() {
+		Debug.println(3, "Thread " + Thread.currentThread().getId() + ": query Google on: " + q);
 		try {
 			URLConnection conn = null;
 			pArr[index] = null;
 			try {
 				conn = (new URL(q)).openConnection();
+				Debug.println(3, "Thread " + Thread.currentThread().getId() + ": parsing  Google result page: " + q);
 				pArr[index] = JSON.parse(conn.getInputStream());
 			} catch (MalformedURLException e) {
 				System.err.println("Google Query URL Exception! URL:" + q);
@@ -182,12 +209,14 @@ class _GetGQPage extends Thread {
 				System.err.println("JSON format exception while Query Google on url:" + q);
 			}
 		} finally {
-			countDownSig.countDown();
+			if (countDownSig != null) {
+				countDownSig.countDown();
+			}
 		}
 	}
 }
 
-class _GetGateDoc extends Thread {
+class _GetGateDoc implements Runnable {
 	URL u;
 	CountDownLatch countDownSig;
 	Corpus corpus;
@@ -198,7 +227,7 @@ class _GetGateDoc extends Thread {
 	}
 	public void run() {
 		try {
-			Debug.println(3, "Thread " + this.getId() + ": change local url to gate.Document : " + u);
+			Debug.println(3, "Thread " + Thread.currentThread().getId() + ": change local url to gate.Document : " + u);
 			Document doc = new DocumentImpl();
 			doc.setSourceUrl(u);
 			try {
@@ -207,13 +236,14 @@ class _GetGateDoc extends Thread {
 				System.err.println("Error while change url to gate.Document! url=" + u);
 				doc = null;
 			}
-			Debug.println(3, "Thread " + this.getId() + ": add document " + u + "to Corpus: " + corpus.getName());
+			Debug.println(3, "Thread " + Thread.currentThread().getId() + ": add document " + u + "to Corpus: " + corpus.getName());
 			synchronized(corpus) {
 				corpus.add(doc);
 			}
-			Debug.println(3, "Thread " + this.getId() + ": finished");
 		} finally {
-			countDownSig.countDown();
+			if (countDownSig != null) {
+				countDownSig.countDown();
+			}
 		}
 	}
 }
