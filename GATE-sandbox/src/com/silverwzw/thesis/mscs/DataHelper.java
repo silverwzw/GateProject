@@ -5,13 +5,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import com.silverwzw.google.api.GQuery;
+import com.silverwzw.google.api.Search;
 
 public class DataHelper {
 	public static String getUrlMatrixCSV(String SearchTerm1,String SearchTerm2, int matrixDim1, int matrixDim2) {
 		List<String> ulist1, ulist2;
-		ulist1 = new GQuery(SearchTerm1).asUrlStringList(matrixDim1);
-		ulist2 = new GQuery(SearchTerm2).asUrlStringList(matrixDim2);
+		ulist1 = new Search(SearchTerm1).asUrlStringList(matrixDim1);
+		ulist2 = new Search(SearchTerm2).asUrlStringList(matrixDim2);
 		String csv = "";
 		for (int i = 1; i < matrixDim1; i++) {
 			for (int j = 1; j < matrixDim2; j++) {
@@ -24,9 +24,9 @@ public class DataHelper {
 	}
 	public static void getUrlSeries(List<String> keywords, int sampleSize) {
 		List<String> ulist1,ulist2;
-		ulist1 = new GQuery(Helper.getSearchTerm(keywords, 1)).asUrlStringList(sampleSize);
+		ulist1 = new Search(Helper.getSearchTerm(keywords, 1)).asUrlStringList(sampleSize);
 		for (int i = 2; i <= keywords.size(); i++) {
-			ulist2 = new GQuery(Helper.getSearchTerm(keywords, i)).asUrlStringList(sampleSize);
+			ulist2 = new Search(Helper.getSearchTerm(keywords, i)).asUrlStringList(sampleSize);
 			System.out.println(Helper.slice(ulist1, ulist1, sampleSize, sampleSize));
 			ulist1 = ulist2;
 		}
