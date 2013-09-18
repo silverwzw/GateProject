@@ -10,12 +10,13 @@ import java.util.Map;
 import java.util.Set;
 
 import com.silverwzw.Debug;
-import com.silverwzw.api.google.Search;
+import com.silverwzw.api.Search;
 import com.silverwzw.cmdapp.Executable;
 
 public class SingleWordTest {
 	
 	private String table;
+	private Search se;
 	
 	SingleWordTest(String table) {
 		this.table = table;
@@ -26,11 +27,11 @@ public class SingleWordTest {
 		int listSize;
 		java.sql.Connection conn;
 		String time;
-		public Dump2db(java.sql.Connection conn, String[] kw, int listSize, String time) {
+		public Dump2db(java.sql.Connection conn, String[] kw, int listSize, Search searchEngine) {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
-			this.time = time;
+			se = searchEngine;
 		}
 		public void execute(String[] args) throws Exception {
 			try {
@@ -40,11 +41,8 @@ public class SingleWordTest {
 			}
 			conn.createStatement().execute("CREATE TABLE " + table + " (word VARCHAR(32) NOT NULL, url VARCHAR(2047) NOT NULL);");
 			for (String word : kw) {
-				Search gq;
-				gq = new Search(word.replaceAll(" ", "%20"), time);
-				gq.useGoogleApi(false);
-				gq.setResultPerPage(50);
-				List<String> urls = gq.asUrlStringList(listSize);
+				se.setSearchTerm(word);
+				List<String> urls = se.asUrlStringList(listSize);
 				for (String url : urls) {
 					Debug.println(3, "<saving> " + url);
 					PreparedStatement ps = conn.prepareStatement("INSERT INTO " + table + " (word, url) VALUES (?, ?);");

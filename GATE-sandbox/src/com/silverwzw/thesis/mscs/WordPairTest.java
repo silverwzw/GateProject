@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import com.silverwzw.api.google.Search;
+import com.silverwzw.api.Search;
 import com.silverwzw.cmdapp.Executable;
 
 public class WordPairTest {
@@ -207,11 +207,12 @@ public class WordPairTest {
 		String[][] kw;
 		int listSize;
 		java.sql.Connection conn;
-		String time;
-		public Dump2db(java.sql.Connection conn, String[][] kw, int listSize, String time) {
+		Search se;
+		public Dump2db(java.sql.Connection conn, String[][] kw, int listSize, Search searchEngine) {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
+			se = searchEngine;
 		}
 		public void execute(String[] args) throws Exception {
 			try {
@@ -224,11 +225,8 @@ public class WordPairTest {
 				for (int j = i + 1; j < kw.length; j++) {
 					for (String wordA : kw[i]) {
 						for (String wordB : kw[j]) {
-							Search gq;
-							gq = new Search(wordA.replaceAll(" ", "%20") + "%20" + wordB.replaceAll(" ", "%20"), time);
-							gq.useGoogleApi(false);
-							gq.setXGoogleApiEscapeTime(5000);
-							List<String> urls = gq.asUrlStringList(listSize);
+							se.setSearchTerm(wordA + " " + wordB);
+							List<String> urls = se.asUrlStringList(listSize);
 							for (String url : urls) {
 								System.out.println("[saving] " + url);
 								PreparedStatement ps = conn.prepareStatement("INSERT INTO " + table + " (wordA, wordB, url) VALUES (?, ?, ?);");
