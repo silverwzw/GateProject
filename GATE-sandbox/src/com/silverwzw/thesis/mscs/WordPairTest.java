@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import com.silverwzw.api.google.Search;
 import com.silverwzw.cmdapp.Executable;
-import com.silverwzw.google.api.Search;
 
 public class WordPairTest {
 	
@@ -207,7 +207,8 @@ public class WordPairTest {
 		String[][] kw;
 		int listSize;
 		java.sql.Connection conn;
-		public Dump2db(java.sql.Connection conn, String[][] kw, int listSize) {
+		String time;
+		public Dump2db(java.sql.Connection conn, String[][] kw, int listSize, String time) {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
@@ -224,7 +225,7 @@ public class WordPairTest {
 					for (String wordA : kw[i]) {
 						for (String wordB : kw[j]) {
 							Search gq;
-							gq = new Search(wordA.replaceAll(" ", "%20") + "%20" + wordB.replaceAll(" ", "%20"));
+							gq = new Search(wordA.replaceAll(" ", "%20") + "%20" + wordB.replaceAll(" ", "%20"), time);
 							gq.useGoogleApi(false);
 							gq.setXGoogleApiEscapeTime(5000);
 							List<String> urls = gq.asUrlStringList(listSize);

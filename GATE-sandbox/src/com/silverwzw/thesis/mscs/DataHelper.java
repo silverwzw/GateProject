@@ -5,10 +5,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import com.silverwzw.google.api.Search;
+import com.silverwzw.api.google.Search;
 
 public class DataHelper {
-	public static String getUrlMatrixCSV(String SearchTerm1,String SearchTerm2, int matrixDim1, int matrixDim2) {
+	/*
+	 public static String getUrlMatrixCSV(String SearchTerm1,String SearchTerm2, int matrixDim1, int matrixDim2) {
 		List<String> ulist1, ulist2;
 		ulist1 = new Search(SearchTerm1).asUrlStringList(matrixDim1);
 		ulist2 = new Search(SearchTerm2).asUrlStringList(matrixDim2);
@@ -31,6 +32,7 @@ public class DataHelper {
 			ulist1 = ulist2;
 		}
 	}
+	*/
 	public static void testHelper() {
 		List<String> s1,s2;
 		s1 = new LinkedList<String>();

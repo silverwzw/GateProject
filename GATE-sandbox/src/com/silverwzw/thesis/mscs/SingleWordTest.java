@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.silverwzw.Debug;
+import com.silverwzw.api.google.Search;
 import com.silverwzw.cmdapp.Executable;
-import com.silverwzw.google.api.Search;
 
 public class SingleWordTest {
 	
@@ -25,10 +25,12 @@ public class SingleWordTest {
 		String[] kw;
 		int listSize;
 		java.sql.Connection conn;
-		public Dump2db(java.sql.Connection conn, String[] kw, int listSize) {
+		String time;
+		public Dump2db(java.sql.Connection conn, String[] kw, int listSize, String time) {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
+			this.time = time;
 		}
 		public void execute(String[] args) throws Exception {
 			try {
@@ -39,7 +41,7 @@ public class SingleWordTest {
 			conn.createStatement().execute("CREATE TABLE " + table + " (word VARCHAR(32) NOT NULL, url VARCHAR(2047) NOT NULL);");
 			for (String word : kw) {
 				Search gq;
-				gq = new Search(word.replaceAll(" ", "%20"));
+				gq = new Search(word.replaceAll(" ", "%20"), time);
 				gq.useGoogleApi(false);
 				gq.setResultPerPage(50);
 				List<String> urls = gq.asUrlStringList(listSize);
@@ -55,11 +57,11 @@ public class SingleWordTest {
 		}
 	}
 	
-	public class Anaylsis implements Executable {
+	public class Analysis implements Executable {
 		String[] kw;
 		int listSize;
 		java.sql.Connection conn;
-		public Anaylsis(java.sql.Connection conn, String[] kw, int listSize) {
+		public Analysis(java.sql.Connection conn, String[] kw, int listSize) {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
