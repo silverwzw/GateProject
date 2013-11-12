@@ -38,6 +38,9 @@ public class WordPairTest {
 				}
 				return a.equals(this.getClass().cast(o).a) && b.equals(this.getClass().cast(o).b);
 			}
+			public int hashCode(){                 
+			     return a.hashCode() * b.hashCode() ; 
+			}
 		}
 		private class WordPair extends Pair<String> {
 			public WordPair(String a, String b) {
@@ -51,6 +54,14 @@ public class WordPairTest {
 			this.conn = conn;
 			this.kw = kw;
 			this.listSize = listSize;
+		}
+		public void execute2(String[] args) throws Exception {
+			Pair<WordPair> pwp1;
+			WordPair wp1,wp2;
+			wp1 = new WordPair("a","b");
+			wp2 = new WordPair("c","d");
+			pwp1 = new Pair<WordPair>(wp1,wp2);
+			System.out.println(pwp1.equals(new Pair<WordPair>(wp1,wp2)));
 		}
 		public void execute(String[] args) throws Exception {
 			List<List<WordPair>> combs = new ArrayList<List<WordPair>>(3);
@@ -87,25 +98,40 @@ public class WordPairTest {
 					ttl.addAll(word2url.get(wp));
 				}
 				totalUrls = ttl.size();
-				System.out.println("total number of urls: " + totalUrls);
-				System.out.println("total overlap : " + (kw[0].length*kw[0].length * listSize - ttl.size()) + '\n');
-				for (WordPair wp : comb) {
-					System.out.print("," + wp.toString() );
-				}
 				
+				Map<WordPair, Set<String>> diffSetsm;
+				diffSetsm = new HashMap<WordPair, Set<String>>();
 				for (WordPair wp1 : comb) {
-					System.out.print("\n" + wp1.toString() + ',');
+					Set<String> ds = new HashSet<String>();
+					ds.addAll(word2url.get(wp1));
 					for (WordPair wp2 : comb) {
-						if (wp1.equals(wp2)) {
-							System.out.print("N/A,");
-						} else {
+						if (!wp1.equals(wp2)) {
 							ttl = new HashSet<String>();
 							ttl.addAll(word2url.get(wp1));
 							ttl.addAll(word2url.get(wp2));
 							int overlap;
 							overlap = 2 * listSize - ttl.size();
 							overlapTable.put(new Pair<WordPair>(wp1,wp2), overlap);
-							System.out.print(overlap + ",");
+							ds.removeAll(word2url.get(wp2));
+							//System.out.print(overlap + ",");
+						}
+					}
+					 
+					diffSetsm.put(wp1, ds);
+				}
+				
+				System.out.println("total number of urls: " + totalUrls);
+				System.out.println("total overlap : " + (kw[0].length*kw[0].length * listSize - ttl.size()) + '\n');
+				for (WordPair wp : comb) {
+					System.out.print("," + wp.toString() );
+				}
+				for (WordPair wp1 : comb) {
+					System.out.print("\n" + wp1.toString() + ',');
+					for (WordPair wp2 : comb) {
+						if (wp1.equals(wp2)) {
+							System.out.print(diffSetsm.get(wp1).size() + ",");
+						} else {
+							System.out.print(overlapTable.get(new Pair<WordPair>(wp1,wp2)) + ",");
 						}
 					}
 				}

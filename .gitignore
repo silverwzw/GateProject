@@ -1,0 +1,5 @@
+/bin
+/src/com/silverwzw/gate/datastore/GitIgnore.java
+.classpath
+.settings
+.project

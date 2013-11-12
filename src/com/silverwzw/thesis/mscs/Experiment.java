@@ -21,22 +21,24 @@ public class Experiment extends ActionHandler {
 			{"Linux", "iptables", "awk", "sudo", "Debian"},
 		};
 		java.sql.Connection conn;
-		int listSize = 115;
+		int listSize = 100;
 		Search searchEngine;
+		
+		com.silverwzw.api.google.Search gse = new com.silverwzw.api.google.Search(null, "h");
+		gse.useGoogleApi(true);
+		gse.setResultPerPage(10);
+		gse.setXGoogleApiEscapeTime(5000);
+		searchEngine = gse;
 		/*
-		 * searchEngine = new com.silverwzw.api.google.Search(null, "h");
-		 * searchEngine.useGoogleApi(false);
-		 * searchEngine.setResultPerPage(50);
-		 * searchEngine.setXGoogleApiEscapeTime(5000);
-		 */
 		searchEngine = new DuckDuckGo(null);
+		*/
 		try {
 			conn = java.sql.DriverManager.getConnection("jdbc:mysql://localhost:3306/thesis_data","thesis","thesis");
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		Debug.set(3);
-		register('d', new WordPairTest("exp9").new Dump2db(conn, kw, listSize, searchEngine));
-		register('a', new WordPairTest("exp9").new Analysis(conn, kw, listSize));
+		register('d', new WordPairTest("Google_Pair_listA").new Dump2db(conn, kw, listSize, searchEngine));
+		register('a', new WordPairTest("Google_Pair_listA").new Analysis(conn, kw, listSize));
 	}
 }
